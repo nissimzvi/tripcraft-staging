@@ -5,6 +5,6 @@ window.TRIPCRAFT_CONFIG = {
   supabaseAnonKey: 'sb_publishable_FQAN7Em12GRjR3bYJVlQZw_nMBKgU4z',
   aiFunctionName: 'tripcraft-ai',
   bookingAffiliateTemplate: '',
-  publicBaseUrl: 'https://nissimzvi.github.io/tripcraft-app-test/',
+  publicBaseUrl: 'https://nissimzvi.github.io/tripcraft-staging/',
   version: '144'
 };
