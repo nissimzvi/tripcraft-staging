@@ -857,7 +857,7 @@
   function observeAccount() {
     var box = $('tcAccountBody'); if (!box || accountObserved) return; accountObserved = true;
     var t0 = 0;
-    new MutationObserver(function () {
+    function check() {
       if (!box.querySelector('.tc-v141-account-trip')) return;
       clearTimeout(t0);
       t0 = setTimeout(function () {
@@ -865,7 +865,9 @@
         var my = ++accountSeq;
         (lastTrips.length ? Promise.resolve(lastTrips) : loadMyTrips(u)).then(function (tr) { if (my === accountSeq) paintAccount(box, tr); });
       }, 30);
-    }).observe(box, { childList: true });
+    }
+    new MutationObserver(check).observe(box, { childList: true, subtree: true });
+    check();
   }
   function loadMyTrips(u) {
     var sb = null; try { sb = tcSupabase(); } catch (e) {}
