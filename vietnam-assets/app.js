@@ -1,4 +1,4 @@
-﻿/* Shared map helper for the bundled Vietnam itinerary pages. */
+/* Shared map helper for the bundled Vietnam itinerary pages. */
 (() => {
   'use strict';
   window.makeMap=function(id,points){
@@ -17,6 +17,6 @@
       bounds.push([Number(point.lat),Number(point.lon)]);
     });
     if(bounds.length===1)map.setView(bounds[0],12);else map.fitBounds(bounds,{padding:[32,32]});
-    setTimeout(typeof (()=>map.invalidateSize()) === "function" ? (()=>map.invalidateSize()) : undefined,120);
+    setTimeout(()=>map.invalidateSize(),120);
   };
 })();
