@@ -174,8 +174,9 @@
     var snapshot = clone(d);
     remoteEdit(snapshot, text, dayScope ? 'day' : 'trip', dayIndex)
       .catch(function (err) {
-        console.warn('TripCraft V160: AI edit unavailable, trying local edit', err && (err.message || err));
-        return localEdit(snapshot, text, dayScope ? 'day' : 'trip', dayIndex);
+        // V164: never fall back to the naive local edit - it appended raw text as a stop and still counted the edit.
+        console.warn('TripCraft V164: AI edit failed', err && (err.message || err));
+        throw new Error('AI_EDIT_FAILED');
       })
       .then(function (res) {
         var cur = P().draft;
@@ -195,7 +196,7 @@
         var local = err && err.message === 'LOCAL_NO_MATCH';
         bubble(log, 'bot', escH(local
           ? t('לא הצלחתי לבצע את השינוי כרגע. נסו לנסח עם מספר יום ושם מקום, למשל: "ביום 3 להוסיף מפלי קרימל". העריכה לא נספרה.', 'I could not apply that right now. Try naming a day and a place, e.g. "On day 3 add Krimml Falls". This edit was not counted.')
-          : t('השינוי נכשל ולא נספר. נסו שוב בעוד רגע.', 'The edit failed and was not counted. Please try again.')));
+          : t('עריכת AI לא הצליחה כרגע, והמסלול לא השתנה. העריכה לא נספרה. אפשר לערוך תחנות ידנית בכפתורי "עדכן נקודה" / "הסר נקודה".', 'The AI edit did not go through and nothing changed. It was not counted. You can still edit stops manually.')));
       })
       .then(function () { if (btn) { btn.dataset.busy = '0'; } renderQuota(); });
   }

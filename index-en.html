@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="tripcraft-v160.css?v=160">
+<link rel="stylesheet" href="tripcraft-v170.css?v=170">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
@@ -649,7 +650,7 @@ function plannerKnownStops(destination,interests,must){
 }
 function tcEnText(value){let x=String(value??'');const exact={'יום טיול':'Travel day','נחיתה והתחלה':'Arrival and trip start','חזרה הביתה':'Return home','מסלול מגוון':'Varied itinerary','טבע ונופים':'Nature & scenery','עיר ועיירות':'Cities & towns','שופינג':'Shopping','זוג':'Couple','משפחה':'Family','חברים':'Friends','יחיד':'Solo','רגוע':'Relaxed','מאוזן':'Balanced','אקטיבי':'Active','שעה ורבע':'1 hr 15 min'};if(exact[x])return exact[x];const reps=[[/יום\s*(\d+)/g,'Day $1'],[/מוזיאון/g,'Museum'],[/מסלול היום ב־?/g,"Today’s route in "],[/ביקור ב־?/g,'Visit '],[/מה עושים:\s*/g,'What to do: '],[/לינה:\s*/g,'Lodging: '],[/לינת הלילה/g,'Overnight stay'],[/כל המלונות בטיול/g,'All trip hotels'],[/שנה מלון/g,'Change hotel'],[/עלות אטרקציות ליום/g,'Estimated attraction cost for the day'],[/לכל המשתתפים/g,'for all travelers'],[/זמן במקום:/g,'Time on site:'],[/מעבר:/g,'Travel:'],[/כ־\s*(\d+)\s*דקות נסיעה/g,'approx. $1 min drive'],[/כ־\s*(\d+)\s*דק[׳']? נהיגה/g,'approx. $1 min drive'],[/היכרות עם המקום והנקודות המרכזיות בקצב שמתאים להרכב המטיילים\.?/g,'Explore the place and its main highlights at a pace that suits the group.'],[/הפירוט המלא, זמני פתיחה, חניה והמלצות יופיעו ב־Drill Down\.?/g,'Full details, opening hours, parking and recommendations appear in the day drill-down.']];for(const [a,b]of reps)x=x.replace(a,b);return x;}function tcEnPlace(value){return tcEnText(value).replace(/פרובנס/g,'Provence').replace(/מילאנו/g,'Milan').replace(/בודפשט/g,'Budapest').replace(/רומא/g,'Rome').replace(/ונציה/g,'Venice').replace(/פראג/g,'Prague').replace(/ציריך/g,'Zurich').replace(/ניו יורק/g,'New York').replace(/טירול/g,'Tyrol').replace(/דולומיטים/g,'Dolomites');}
 function plannerThemeShort(d){const txt=((d.title||'')+' '+(d.stops||[]).map(x=>x.place).join(' ')).toLowerCase();const a=[];if(/lake|אגם|waterfall|מפל|nature|טבע|park|forest|mountain|הר|נוף/.test(txt))a.push('Nature & scenery');if(/old town|center|עיר|כיכר|castle|museum|market|עייר/.test(txt))a.push('Cities & towns');if(/shopping|outlet|שופינג|קניות/.test(txt))a.push('Shopping');return a.slice(0,2).join(' · ')||'Varied itinerary';}
-function weekdayForDate(s){const dt=dateObj(String(s||'').replace(/-/g,'.'));if(!dt)return'';return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];}
+function weekdayForDate(s){const iso=String(s||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);const dt=iso?new Date(+iso[1],+iso[2]-1,+iso[3]):dateObj(String(s||''));if(!dt)return'';return['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dt.getDay()];}
 function displayPlannerDate(s){const v=String(s||'').trim(),iso=v.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/),local=v.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);let y,m,d;if(iso){y=iso[1];m=Number(iso[2]);d=Number(iso[3]);}else if(local){d=Number(local[1]);m=Number(local[2]);y=local[3];}else return v;const he=['ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג','ספט','אוק','נוב','דצמ'],en=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const isEn=(document.documentElement.lang||'he').toLowerCase().startsWith('en');return `${d} ${(isEn?en:he)[m-1]||m} ${y}`;}
 function airportCompatibility(destination,arrival,departure){
  const d=String(destination||'').toLowerCase(),both=(String(arrival||'')+' '+String(departure||'')).toLowerCase();let warn=false,msg='';const any=(rx,s)=>rx.test(s);
@@ -1067,12 +1068,13 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 </script>
 
 
+<script src="tripcraft-data.js?v=170"></script>
 <script id="tc-v57-ux">
 (function(){
- const countries=['אוסטריה','גרמניה','איטליה','צרפת','שווייץ','יוון','הונגריה','סלובקיה','ויאטנם','תאילנד','ספרד','פורטוגל','הולנד','בלגיה','צ׳כיה','פולין','קרואטיה','סלובניה','רומניה','בולגריה','קפריסין','טורקיה','בריטניה','אירלנד','דנמרק','נורווגיה','שוודיה','פינלנד','איסלנד','ארה״ב','קנדה','יפן','דרום קוריאה','סינגפור','איחוד האמירויות','גאורגיה','מונטנגרו','אלבניה','מלטה'];
+ const countries=(window.TC_COUNTRIES_FULL&&window.TC_COUNTRIES_FULL.length)?window.TC_COUNTRIES_FULL.map(c=>c[1]):['אוסטריה','גרמניה','איטליה','צרפת','שווייץ','יוון','הונגריה','סלובקיה','ויאטנם','תאילנד','ספרד','פורטוגל','הולנד','בלגיה','צ׳כיה','פולין','קרואטיה','סלובניה','רומניה','בולגריה','קפריסין','טורקיה','בריטניה','אירלנד','דנמרק','נורווגיה','שוודיה','פינלנד','איסלנד','ארה״ב','קנדה','יפן','דרום קוריאה','סינגפור','איחוד האמירויות','גאורגיה','מונטנגרו','אלבניה','מלטה'];
  const TC_COUNTRY_EN={'אוסטריה':'Austria','גרמניה':'Germany','איטליה':'Italy','צרפת':'France','שווייץ':'Switzerland','יוון':'Greece','הונגריה':'Hungary','סלובקיה':'Slovakia','ויאטנם':'Vietnam','תאילנד':'Thailand','ספרד':'Spain','פורטוגל':'Portugal','הולנד':'Netherlands','בלגיה':'Belgium','צ׳כיה':'Czechia','פולין':'Poland','קרואטיה':'Croatia','סלובניה':'Slovenia','רומניה':'Romania','בולגריה':'Bulgaria','קפריסין':'Cyprus','טורקיה':'Turkey','בריטניה':'United Kingdom','אירלנד':'Ireland','דנמרק':'Denmark','נורווגיה':'Norway','שוודיה':'Sweden','פינלנד':'Finland','איסלנד':'Iceland','ארה״ב':'USA','קנדה':'Canada','יפן':'Japan','דרום קוריאה':'South Korea','סינגפור':'Singapore','איחוד האמירויות':'United Arab Emirates','גאורגיה':'Georgia','מונטנגרו':'Montenegro','אלבניה':'Albania','מלטה':'Malta'};
  const tcCountryDisplay=v=>TC_COUNTRY_EN[String(v||'').trim()]||String(v||'').trim();
- const countryAliases={'שווייץ':['שווייץ','שויץ','שוויץ','שוויצריה','switzerland','swiss','ch'],'אוסטריה':['austria','osterreich','österreich'],'גרמניה':['germany','deutschland'],'איטליה':['italy','italia'],'צרפת':['france'],'יוון':['greece','hellas']};
+ const countryAliases=Object.assign(Object.fromEntries((window.TC_COUNTRIES_FULL||[]).map(c=>[c[1],[c[2],c[0].toLowerCase(),...(c[3]||[])]])),{'שווייץ':['שווייץ','שויץ','שוויץ','שוויצריה','switzerland','swiss','ch'],'אוסטריה':['austria','osterreich','österreich'],'גרמניה':['germany','deutschland'],'איטליה':['italy','italia'],'צרפת':['france'],'יוון':['greece','hellas']});
  const nrm=v=>String(v||'').toLowerCase().normalize('NFKD').replace(/[׳’'״"]/g,'').trim();
  function canonicalCountry(v){const q=nrm(v);for(const c of countries){if(nrm(c)===q||(countryAliases[c]||[]).some(a=>nrm(a)===q))return c;}return String(v||'').trim();}
  const tcOneEdit=(a,b)=>{a=nrm(a);b=nrm(b);if(!a||!b||Math.abs(a.length-b.length)>1)return false;if(a===b)return true;let i=0,j=0,d=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue;}if(++d>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++;}}return d+(i<a.length||j<b.length?1:0)<=1;};
@@ -1363,6 +1365,9 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 <a href="#account"><span class="ico" aria-hidden="true">🧳</span><span data-he="הטיולים שלי" data-en="My trips">הטיולים שלי</span></a>
 <label for="tcNavToggle"><span class="ico" aria-hidden="true">☰</span><span data-he="עוד" data-en="More">עוד</span></label>
 </nav>
-<script src="tripcraft-v160.js?v=160"></script>
+<!-- V170: review before production deployment -->
+<script src="tripcraft-v160.js?v=170"></script>
+<script src="tripcraft-v170.js?v=170"></script>
+<script src="tripcraft-i18n-en.js?v=170"></script>
 <script src="tripcraft-analytics.js?v=160"></script>
 </body></html>

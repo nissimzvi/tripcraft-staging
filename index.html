@@ -18,6 +18,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="tripcraft-v160.css?v=160">
+<link rel="stylesheet" href="tripcraft-v170.css?v=170">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
@@ -648,7 +649,7 @@ function plannerKnownStops(destination,interests,must){
  return base;
 }
 function plannerThemeShort(d){const txt=((d.title||'')+' '+(d.stops||[]).map(x=>x.place).join(' ')).toLowerCase();const a=[];if(/lake|אגם|waterfall|מפל|nature|טבע|park|forest|mountain|הר|נוף/.test(txt))a.push('טבע ונופים');if(/old town|center|עיר|כיכר|castle|museum|market|עייר/.test(txt))a.push('עיר ועיירות');if(/shopping|outlet|שופינג|קניות/.test(txt))a.push('שופינג');return a.slice(0,2).join(' · ')||'מסלול מגוון';}
-function weekdayForDate(s){const dt=dateObj(String(s||'').replace(/-/g,'.'));if(!dt)return'';return['יום א׳','יום ב׳','יום ג׳','יום ד׳','יום ה׳','יום ו׳','שבת'][dt.getDay()];}
+function weekdayForDate(s){const iso=String(s||'').match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);const dt=iso?new Date(+iso[1],+iso[2]-1,+iso[3]):dateObj(String(s||''));if(!dt)return'';return['יום א׳','יום ב׳','יום ג׳','יום ד׳','יום ה׳','יום ו׳','שבת'][dt.getDay()];}
 function displayPlannerDate(s){const v=String(s||'').trim(),iso=v.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/),local=v.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);let y,m,d;if(iso){y=iso[1];m=Number(iso[2]);d=Number(iso[3]);}else if(local){d=Number(local[1]);m=Number(local[2]);y=local[3];}else return v;const he=['ינו','פבר','מרץ','אפר','מאי','יוני','יולי','אוג','ספט','אוק','נוב','דצמ'],en=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const isEn=(document.documentElement.lang||'he').toLowerCase().startsWith('en');return `${d} ${(isEn?en:he)[m-1]||m} ${y}`;}
 function airportCompatibility(destination,arrival,departure){
  const d=String(destination||'').toLowerCase(),a=String(arrival||'').toLowerCase(),r=String(departure||arrival||'').toLowerCase();
@@ -1089,10 +1090,11 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 </script>
 
 
+<script src="tripcraft-data.js?v=170"></script>
 <script id="tc-v57-ux">
 (function(){
- const countries=['אוסטריה','גרמניה','איטליה','צרפת','שווייץ','יוון','הונגריה','סלובקיה','ויאטנם','תאילנד','ספרד','פורטוגל','הולנד','בלגיה','צ׳כיה','פולין','קרואטיה','סלובניה','רומניה','בולגריה','קפריסין','טורקיה','בריטניה','אירלנד','דנמרק','נורווגיה','שוודיה','פינלנד','איסלנד','ארה״ב','קנדה','יפן','דרום קוריאה','סינגפור','איחוד האמירויות','גאורגיה','מונטנגרו','אלבניה','מלטה'];
- const countryAliases={'שווייץ':['שווייץ','שויץ','שוויץ','שוויצריה','switzerland','swiss','ch'],'אוסטריה':['austria','osterreich','österreich'],'גרמניה':['germany','deutschland'],'איטליה':['italy','italia'],'צרפת':['france'],'יוון':['greece','hellas']};
+ const countries=(window.TC_COUNTRIES_FULL&&window.TC_COUNTRIES_FULL.length)?window.TC_COUNTRIES_FULL.map(c=>c[1]):['אוסטריה','גרמניה','איטליה','צרפת','שווייץ','יוון','הונגריה','סלובקיה','ויאטנם','תאילנד','ספרד','פורטוגל','הולנד','בלגיה','צ׳כיה','פולין','קרואטיה','סלובניה','רומניה','בולגריה','קפריסין','טורקיה','בריטניה','אירלנד','דנמרק','נורווגיה','שוודיה','פינלנד','איסלנד','ארה״ב','קנדה','יפן','דרום קוריאה','סינגפור','איחוד האמירויות','גאורגיה','מונטנגרו','אלבניה','מלטה'];
+ const countryAliases=Object.assign(Object.fromEntries((window.TC_COUNTRIES_FULL||[]).map(c=>[c[1],[c[2],c[0].toLowerCase(),...(c[3]||[])]])),{'שווייץ':['שווייץ','שויץ','שוויץ','שוויצריה','switzerland','swiss','ch'],'אוסטריה':['austria','osterreich','österreich'],'גרמניה':['germany','deutschland'],'איטליה':['italy','italia'],'צרפת':['france'],'יוון':['greece','hellas']});
  const nrm=v=>String(v||'').toLowerCase().normalize('NFKD').replace(/[׳’'״"]/g,'').trim();
  function canonicalCountry(v){const q=nrm(v);for(const c of countries){if(nrm(c)===q||(countryAliases[c]||[]).some(a=>nrm(a)===q))return c;}return String(v||'').trim();}
  const tcOneEdit=(a,b)=>{a=nrm(a);b=nrm(b);if(!a||!b||Math.abs(a.length-b.length)>1)return false;if(a===b)return true;let i=0,j=0,d=0;while(i<a.length&&j<b.length){if(a[i]===b[j]){i++;j++;continue;}if(++d>1)return false;if(a.length>b.length)i++;else if(b.length>a.length)j++;else{i++;j++;}}return d+(i<a.length||j<b.length?1:0)<=1;};
@@ -1363,7 +1365,7 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
   // V164: progress follows the real phases and creeps slowly while waiting, so it never looks frozen.
   const steps=[[0,'מנתחים את ההעדפות שלכם'],[10,'מתאימים את הקצב'],[22,'בונים חלוקת ימים'],[36,'בודקים מרחקים'],[50,'מתאימים לינות'],[64,'מכינים מסלול מפורט']];
   const st={cur:3,cap:82,msg:null,phaseAt:Date.now()};
-  const render=()=>{const v=Math.min(99,Math.floor(st.cur));b.style.width=v+'%';p.textContent=v+'%';let m=st.msg;if(!m){m=steps[0][1];for(const [at,t] of steps)if(st.cur>=at)m=t;}if(Date.now()-st.phaseAt>40000)m+=' · זה לוקח קצת יותר מהרגיל, ממשיכים לעבוד';s.textContent=m;};
+  const render=()=>{const v=Math.min(99,Math.floor(st.cur));b.style.width=v+'%';p.textContent=v+'%';let m=st.msg;if(!m){m=steps[0][1];for(const [at,t] of steps)if(st.cur>=at)m=t;}if(Date.now()-st.phaseAt>75000)m+=' · זה לוקח קצת יותר מהרגיל, ממשיכים לעבוד';s.textContent=m;};
   window.tcProgPhase=function(v,m,cap){st.cur=Math.max(st.cur,v);if(cap)st.cap=cap;st.msg=m||null;st.phaseAt=Date.now();render();};
   render();window.__tcProgTimer=setInterval(()=>{if(!o.classList.contains('show')){clearInterval(window.__tcProgTimer);return;}st.cur+=Math.max(0.03,(st.cap-st.cur)*0.012);if(st.cur>st.cap)st.cur=st.cap;render();},400);};
  window.tcV163FinishProgress=async function(){clearInterval(window.__tcProgTimer);const o=document.getElementById('tripBuildOverlay'),b=document.getElementById('tripBuildBar'),p=document.getElementById('tripBuildPct'),s=document.getElementById('tripBuildStatus');if(!o)return;b.style.width='100%';p.textContent='100%';s.textContent='הטיול נשמר ואומת';await new Promise(r=>setTimeout(r,250));o.classList.remove('show');o.setAttribute('aria-hidden','true');};
@@ -1391,6 +1393,8 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 <a href="#account"><span class="ico" aria-hidden="true">🧳</span><span data-he="הטיולים שלי" data-en="My trips">הטיולים שלי</span></a>
 <label for="tcNavToggle"><span class="ico" aria-hidden="true">☰</span><span data-he="עוד" data-en="More">עוד</span></label>
 </nav>
-<script src="tripcraft-v160.js?v=160"></script>
+<!-- V170: review before production deployment -->
+<script src="tripcraft-v160.js?v=170"></script>
+<script src="tripcraft-v170.js?v=170"></script>
 <script src="tripcraft-analytics.js?v=160"></script>
 </body></html>

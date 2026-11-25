@@ -1,0 +1,233 @@
+/* TripCraft V170 design layer - premium, consistent, mobile-first.
+   NOTE: review before production deployment. */
+:root{
+  --tc-ink:#0f2a37; --tc-ink-2:#33505e; --tc-muted:#6b7f8a; --tc-line:#e3eaee; --tc-bg:#f5f7f8; --tc-surface:#fff;
+  --tc-brand:#0d6b63; --tc-brand-2:#0a524c; --tc-brand-soft:#e7f3f1; --tc-accent:#f26b3a; --tc-accent-soft:#fff1eb;
+  --tc-danger:#c2362b; --tc-warn:#b26a00; --tc-gold:#e7a50b; --tc-booking:#003b95; --tc-waze:#33ccff;
+  --tc-radius:20px; --tc-radius-sm:12px; --tc-shadow:0 1px 2px rgba(15,42,55,.05),0 10px 30px rgba(15,42,55,.07);
+  --tc-shadow-lg:0 24px 60px rgba(15,42,55,.18); --tc-ease:cubic-bezier(.2,.7,.2,1);
+}
+html{-webkit-text-size-adjust:100%;scroll-padding-top:84px}
+body{background:var(--tc-bg);color:var(--tc-ink);overflow-x:clip;font-feature-settings:"kern";-webkit-font-smoothing:antialiased}
+img,video,iframe{max-width:100%}
+*:focus-visible{outline:3px solid rgba(13,107,99,.35);outline-offset:2px;border-radius:10px}
+
+/* ---------- buttons (new + legacy harmonised) ---------- */
+.tc-btn,.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid transparent;font:600 15px/1.2 inherit;cursor:pointer;text-decoration:none;transition:transform .15s var(--tc-ease),box-shadow .2s,background .2s,color .2s;white-space:normal;text-align:center;max-width:100%;box-sizing:border-box}
+.tc-btn:active,.btn:active{transform:scale(.98)}
+.tc-btn-primary,.btn.green,.btn.planner-color,.btn.ai-color,.btn.secondary{background:var(--tc-brand);color:#fff;box-shadow:0 6px 16px rgba(13,107,99,.22)}
+.tc-btn-primary:hover,.btn.green:hover,.btn.ai-color:hover,.btn.secondary:hover{background:var(--tc-brand-2)}
+.btn.planner-color{background:var(--tc-accent);box-shadow:0 6px 16px rgba(242,107,58,.28)}
+.tc-btn-soft,.btn.soft{background:var(--tc-surface);color:var(--tc-ink);border-color:var(--tc-line)}
+.tc-btn-soft:hover,.btn.soft:hover{border-color:#c9d6dc;background:#fafcfc}
+.tc-btn-ghost{background:transparent;color:var(--tc-ink-2);border-color:transparent}
+.tc-btn-ghost:hover{background:#eef3f5}
+.tc-btn-danger{background:var(--tc-danger);color:#fff}
+.tc-danger-text{color:var(--tc-danger)!important}
+.tc-btn-waze{background:var(--tc-waze);color:#06283a;font-weight:700}
+.tc-btn-booking{background:var(--tc-booking);color:#fff;width:100%}
+.tc-btn-booking:hover{background:#00296b}
+.btn[disabled],.tc-btn[disabled]{opacity:.55;cursor:not-allowed}
+
+/* ---------- header polish ---------- */
+.tc-header{backdrop-filter:saturate(1.4) blur(12px);-webkit-backdrop-filter:saturate(1.4) blur(12px);background:rgba(255,255,255,.86)!important;border-bottom:1px solid rgba(15,42,55,.06)}
+.tc-desktop-nav a{border-radius:999px;transition:background .2s}
+.tc-desktop-nav a:hover{background:#eef3f5}
+
+/* ---------- panels & cards ---------- */
+.panel,.planner-step,.planner-result-head,.account-card,.auth-card,.price-card{border-radius:var(--tc-radius)!important;box-shadow:var(--tc-shadow)!important;border:1px solid rgba(15,42,55,.04)}
+.planner-step{background:var(--tc-surface)}
+.headrow h2{letter-spacing:-.02em}
+
+/* ---------- wizard ---------- */
+.step1-subnav{display:grid!important;grid-template-columns:repeat(3,1fr);gap:8px}
+.step1-subnav span{cursor:pointer;user-select:none;border-radius:999px;text-align:center;padding:10px 8px;font-weight:600;transition:background .2s,color .2s}
+.step1-subnav span.done{background:var(--tc-brand-soft);color:var(--tc-brand)}
+.step1-subnav span.done::before{content:"✓ "}
+.tc-context{margin:6px 0 14px;padding:12px 14px;background:var(--tc-brand-soft);border-radius:var(--tc-radius-sm);color:var(--tc-ink-2);line-height:1.7}
+.tc-context:empty{display:none}
+.tc-context .tc-hebdate,.tc-sum-dates .tc-hebdate,.tc-trip-dates .tc-hebdate{display:inline;margin-inline-start:6px}
+.tc-sum-dates .tc-hebdate{display:block;margin:0}
+.tc-invalid{border-color:var(--tc-danger)!important;box-shadow:0 0 0 4px rgba(194,54,43,.12)!important;animation:tcShake .35s}
+@keyframes tcShake{25%{transform:translateX(4px)}75%{transform:translateX(-4px)}}
+.choice-grid label,.country-chips label{transition:border-color .2s,background .2s,box-shadow .2s}
+.choice-grid label:has(input:checked),.country-chips label:has(input:checked){border-color:var(--tc-brand)!important;background:var(--tc-brand-soft)!important;box-shadow:0 0 0 1px var(--tc-brand) inset}
+input,select,textarea{font-size:16px!important} /* prevents iOS zoom-on-focus */
+.field input,.field select,.field textarea,.ac-wrap input{border-radius:14px;min-height:48px}
+
+/* chips field (must-see places) */
+.tc-chipfield{display:grid;gap:8px}
+.tc-chips{display:flex;flex-wrap:wrap;gap:8px}
+.tc-chips:empty{display:none}
+.tc-chip{display:inline-flex;align-items:center;gap:6px;background:var(--tc-brand-soft);color:var(--tc-brand-2);border-radius:999px;padding:6px 6px 6px 12px;font-weight:600;font-size:14px}
+[dir=rtl] .tc-chip{padding:6px 12px 6px 6px}
+.tc-chip button{width:26px;height:26px;border-radius:50%;border:0;background:#fff;color:var(--tc-ink-2);font-size:16px;line-height:1;cursor:pointer}
+
+/* calendar */
+.tc-cal-day.tc-past{opacity:.28;text-decoration:line-through;pointer-events:none}
+.tc-hebdate-line{color:#8a9aa3;font-size:13px;margin-top:4px}
+
+/* Hebrew dates - always grey */
+.tc-hebdate{display:block;color:#8a9aa3!important;font-size:12.5px;font-weight:500;margin-top:2px;letter-spacing:0}
+.day-no .tc-hebdate{font-size:11px;text-align:center}
+#plannerResultMeta .tc-hebdate{display:block}
+
+/* summary before build */
+#plannerSummary{display:block!important}
+.tc-sum-hero{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;align-items:flex-end;padding:18px 20px;border-radius:var(--tc-radius);background:linear-gradient(135deg,var(--tc-brand),#127f75);color:#fff;margin-bottom:14px}
+.tc-sum-hero h3{margin:2px 0 0;font-size:24px;color:#fff}
+.tc-sum-hero small{opacity:.85}
+.tc-sum-dates{font-weight:700;text-align:end;display:grid;gap:2px}
+.tc-sum-hero .tc-hebdate{color:rgba(255,255,255,.75)!important}
+.tc-sum-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.tc-sum-grid section{background:var(--tc-surface);border:1px solid var(--tc-line);border-radius:16px;padding:14px 16px}
+.tc-sum-grid h4{margin:0 0 8px;font-size:15px}
+.tc-sum-row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-top:1px dashed var(--tc-line);font-size:14px}
+.tc-sum-row:first-of-type{border-top:0}
+.tc-sum-row span{color:var(--tc-muted);flex:0 0 auto}
+.tc-sum-row b{font-weight:600;text-align:end;overflow-wrap:anywhere}
+.tc-sum-note{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--tc-accent-soft);color:#7a3417;font-weight:600}
+
+/* ---------- build overlay ---------- */
+.trip-build-card{border-radius:24px!important;box-shadow:var(--tc-shadow-lg)!important}
+#tripBuildBar{transition:width .4s var(--tc-ease)!important;background:linear-gradient(90deg,var(--tc-brand),#19a394)!important}
+
+/* ---------- result: days ---------- */
+.day-row{border-radius:var(--tc-radius)!important;box-shadow:var(--tc-shadow)!important;overflow:hidden}
+.day-photo.tc-day-art{background:linear-gradient(150deg,var(--day,#0d6b63),#0f2a37)!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;min-height:120px;border-radius:16px}
+.day-photo.tc-day-art span{font-size:34px;line-height:1}
+.day-photo.tc-day-art b{font-size:13px;opacity:.75;letter-spacing:.08em}
+.day-action{display:flex;flex-wrap:wrap;gap:8px}
+.day-action .btn{flex:1 1 140px}
+.cost-chip,.lodging-chip{border-radius:999px!important}
+#plannerDiscardTrip[hidden]{display:none!important}
+.tc-result-dates{font-weight:600}
+
+/* hotels */
+.tc-hotels{margin:18px 0;padding:20px;background:var(--tc-surface);border-radius:var(--tc-radius);box-shadow:var(--tc-shadow)}
+.tc-sec-head h3{margin:0 0 4px}
+.tc-sec-head p{margin:0 0 14px;color:var(--tc-muted)}
+.tc-hotel-area{margin-top:14px}
+.tc-hotel-area-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px;margin-bottom:10px;color:var(--tc-ink-2)}
+.tc-hotel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.tc-hotel-card{position:relative;display:flex;flex-direction:column;gap:8px;padding:16px;border:1px solid var(--tc-line);border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcfc)}
+.tc-hotel-card h4{margin:0;font-size:17px;padding-inline-end:34px}
+.tc-hotel-card p{margin:0;color:var(--tc-ink-2);font-size:14px;line-height:1.6;flex:1}
+.tc-hotel-rank{position:absolute;inset-inline-end:14px;top:14px;width:26px;height:26px;border-radius:50%;background:var(--tc-brand-soft);color:var(--tc-brand);display:grid;place-items:center;font-weight:700;font-size:13px}
+.tc-tags{display:flex;flex-wrap:wrap;gap:6px}
+.tc-tags span{font-size:12px;background:#f0f6f5;color:var(--tc-brand-2);padding:3px 8px;border-radius:999px}
+.tc-meta{display:flex;flex-wrap:wrap;gap:6px}
+.tc-meta span{font-size:13px;background:#f1f4f6;color:var(--tc-ink-2);padding:4px 10px;border-radius:999px}
+
+/* ---------- day details modal ---------- */
+body.tc-modal-open{overflow:hidden}
+.tc-v170-day .planner-modal-card{width:min(860px,100%);max-height:min(92vh,100%);display:flex;flex-direction:column;padding:0!important;overflow:hidden;border-radius:24px!important}
+.tc-v170-day .planner-modal-card>*{margin-inline:20px}
+.tc-v170-day .planner-modal-head{position:sticky;top:0;z-index:3;margin:0!important;padding:16px 20px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);border-bottom:1px solid var(--tc-line);display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.tc-v170-day .planner-modal-card{overflow-y:auto;overscroll-behavior:contain}
+#plannerDayModalTitle{font-size:19px;line-height:1.35}
+.tc-day-badge{display:inline-block;background:var(--tc-brand);color:#fff;border-radius:999px;padding:2px 10px;font-size:14px;margin-inline-end:6px;vertical-align:2px}
+.tc-day-sub{color:var(--tc-muted);font-size:13px;margin-top:4px}
+#plannerDayModalClose{flex:0 0 auto}
+.tc-v170-day .field{margin-top:16px}
+.tc-v170-day #plannerDayRouteBox{background:transparent!important;border:0!important;padding:0!important}
+.tc-day-summary{background:var(--tc-brand-soft);border-radius:16px;padding:14px 16px;line-height:1.7}
+.tc-day-summary p{margin:0 0 6px}
+.tc-day-lodging{margin-top:6px}
+.tc-muted{color:var(--tc-muted)}
+.tc-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.tc-actions .tc-btn{flex:1 1 200px}
+.tc-checks{margin-top:12px;border:1px solid var(--tc-line);border-radius:14px;padding:10px 14px;background:#fff}
+.tc-checks summary{cursor:pointer;font-weight:700;color:var(--tc-brand)}
+.tc-check{padding:8px 0;border-top:1px dashed var(--tc-line);font-size:14px;line-height:1.6}
+.tc-v170-day .tc-v140-day-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:14px}
+.tc-v170-day .tc-v140-day-actions .btn{flex:1 1 220px}
+.tc-timeline{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:12px;counter-reset:none}
+.tc-stop{display:grid;grid-template-columns:64px 1fr;gap:12px;align-items:start}
+.tc-stop-time{position:relative;font-weight:700;color:var(--tc-brand);text-align:center;padding-top:14px;font-variant-numeric:tabular-nums}
+.tc-stop-time::after{content:"";position:absolute;top:42px;bottom:-14px;inset-inline-start:50%;width:2px;background:var(--tc-line)}
+.tc-stop:last-child .tc-stop-time::after{display:none}
+.tc-stop-body{min-width:0;background:var(--tc-surface);border:1px solid var(--tc-line);border-radius:18px;padding:14px 16px;box-shadow:0 1px 2px rgba(15,42,55,.04)}
+.tc-stop-body h4{margin:0 0 4px;font-size:16.5px;overflow-wrap:anywhere}
+.tc-stop-place{color:var(--tc-ink-2);font-size:14px;margin-bottom:4px;overflow-wrap:anywhere}
+.tc-stop-body p{margin:6px 0;color:var(--tc-ink-2);line-height:1.65;font-size:14.5px}
+.tc-note{font-size:13.5px;color:#6a5200;background:#fff8e6;border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.6}
+.tc-stop-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin-top:12px}
+.tc-stop-actions .tc-btn{min-height:42px;padding:8px 10px;font-size:14px;width:100%}
+.tc-geo-hint{grid-column:1/-1;font-size:13px;color:var(--tc-warn);background:#fff6e5;border-radius:10px;padding:8px 10px}
+.tc-stop.tc-geo-ok .tc-btn-waze::after{content:" ✓";font-weight:800}
+.tc-empty{padding:18px;text-align:center;color:var(--tc-muted);background:#fafbfc;border:1px dashed var(--tc-line);border-radius:16px}
+.tc-v170-day .day-chat{position:sticky;bottom:0;z-index:2;margin:16px 0 0!important;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--tc-line);backdrop-filter:blur(10px)}
+.tc-v170-day .chatlog{max-height:180px;overflow:auto}
+.tc-v170-day .chatinput{display:flex;gap:8px}
+.tc-v170-day .chatinput input{flex:1;min-width:0}
+.tc-v170-day .chatinput .btn{flex:0 0 auto}
+.tc-edit-hint{font-size:13px;color:var(--tc-muted)}
+
+/* ---------- account ---------- */
+.tc-trip-list{display:grid;gap:12px;margin-top:12px}
+.tc-trip-card{display:grid;grid-template-columns:56px 1fr auto;gap:14px;align-items:center;padding:16px;background:var(--tc-surface);border:1px solid var(--tc-line);border-radius:var(--tc-radius);box-shadow:var(--tc-shadow)}
+.tc-trip-art{width:56px;height:56px;border-radius:16px;background:var(--tc-brand-soft);display:grid;place-items:center;font-size:30px}
+.tc-trip-info{min-width:0}
+.tc-trip-info h3{margin:0 0 2px;font-size:18px;overflow-wrap:anywhere}
+.tc-trip-dates{margin-top:4px;font-weight:600;font-size:14px}
+.tc-trip-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+
+/* ---------- dialogs & toasts ---------- */
+body.tc-dialog-open{overflow:hidden}
+.tc-dialog-backdrop{position:fixed;inset:0;z-index:100000;background:rgba(15,42,55,.45);display:grid;place-items:center;padding:16px;opacity:0;transition:opacity .18s}
+.tc-dialog-backdrop.in{opacity:1}
+.tc-dialog{width:min(440px,100%);max-height:calc(100vh - 32px);overflow:auto;background:#fff;border-radius:24px;padding:22px;box-shadow:var(--tc-shadow-lg);transform:translateY(10px) scale(.98);transition:transform .2s var(--tc-ease)}
+.tc-dialog-backdrop.in .tc-dialog{transform:none}
+.tc-dialog-icon{font-size:30px;margin-bottom:4px}
+.tc-dialog h3{margin:0 0 8px;font-size:19px}
+.tc-dialog p{margin:0 0 14px;color:var(--tc-ink-2);line-height:1.65}
+.tc-dialog-field{display:grid;gap:6px;margin-bottom:12px;font-weight:600;font-size:14px}
+.tc-dialog-field input,.tc-dialog-field textarea{width:100%;box-sizing:border-box;border:1px solid var(--tc-line);border-radius:12px;padding:10px 12px;font:inherit}
+.tc-dialog-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+.tc-dialog-actions .tc-btn{flex:1 1 0}
+#tcToastStack{position:fixed;z-index:100001;top:calc(14px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);display:grid;gap:8px;width:min(92vw,440px);pointer-events:none}
+.tc-toast{padding:13px 18px;border-radius:16px;color:#fff;font-weight:700;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.18);opacity:0;transform:translateY(-8px);transition:opacity .25s,transform .25s var(--tc-ease)}
+.tc-toast.in{opacity:1;transform:none}
+.tc-toast-ok{background:#16794f}
+.tc-toast-error{background:var(--tc-danger)}
+#tcToast{display:none!important}
+
+/* ---------- mobile (iPhone / Android) ---------- */
+@media (max-width:700px){
+  .panel,.planner-step{border-radius:18px!important}
+  .tc-btn,.btn{min-height:48px;font-size:15.5px}
+  .planner-actions{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:5;background:rgba(245,247,248,.94);backdrop-filter:blur(8px);padding:10px 0;margin-inline:-4px}
+  .planner-actions .btn{flex:1 1 0}
+  .step1-subnav span{font-size:13px;padding:9px 4px}
+  .tc-v170-day.planner-modal{padding:0!important;align-items:stretch!important}
+  .tc-v170-day .planner-modal-card{width:100%;max-width:100%;height:100%;max-height:100%;border-radius:0!important}
+  .tc-v170-day .planner-modal-card>*{margin-inline:14px}
+  .tc-v170-day .planner-modal-head{padding:calc(12px + env(safe-area-inset-top)) 14px 12px}
+  #plannerDayModalTitle{font-size:16.5px}
+  .tc-v170-day .chatlog{max-height:96px}
+  .tc-v170-day .chatlog .chatmsg.bot:first-child:not(:last-child){display:none}
+  .tc-v170-day .chatlog .chatmsg.bot:only-child{font-size:13px;padding:8px 10px}
+  .tc-v170-day .day-chat{padding:8px 14px calc(8px + env(safe-area-inset-bottom))}
+  .tc-stop{grid-template-columns:1fr;gap:6px}
+  .tc-stop-time{text-align:start;padding:0 4px}
+  .tc-stop-time::after{display:none}
+  .tc-stop-actions{grid-template-columns:1fr 1fr}
+  .tc-actions .tc-btn{flex:1 1 100%}
+  .tc-trip-card{grid-template-columns:48px 1fr}
+  .tc-trip-art{width:48px;height:48px;font-size:26px}
+  .tc-trip-actions{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;justify-content:stretch}
+  .tc-trip-actions .tc-btn-primary{grid-column:1/-1}
+  .day-row{grid-template-columns:1fr!important}
+  .day-action{display:grid!important;grid-template-columns:1fr 1fr}
+  .day-action .btn:first-child{grid-column:1/-1}
+  .tc-sum-hero{flex-direction:column;align-items:flex-start}
+  .tc-sum-dates{text-align:start}
+  .tc-dialog-actions{flex-direction:column-reverse}
+  .tc-hotels{padding:16px}
+}
+@media (max-width:380px){
+  .tc-stop-actions{grid-template-columns:1fr}
+  .step1-subnav{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
