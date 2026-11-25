@@ -196,13 +196,23 @@
     return new Promise(function (r) { setTimeout(r, wait); }).then(function () {
       lastNominatim = Date.now();
       var u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=' + (limit || 6) +
-        '&accept-language=' + (HE ? 'he,en' : 'en') + '&q=' + encodeURIComponent(q) + (isos && isos.length ? '&countrycodes=' + isos.join(',').toLowerCase() : '');
+        '&accept-language=' + (HE ? 'he,en' : 'en') + '&q=' + encodeURIComponent(String(q).replace(/[׳’`]/g, "'").replace(/״/g, '"')) + (isos && isos.length ? '&countrycodes=' + isos.join(',').toLowerCase() : '');
       return fetch(u, { headers: { Accept: 'application/json' } }).then(function (r) { if (!r.ok) throw new Error('geo ' + r.status); return r.json(); });
     });
   }
   function photonSearch(q, isos) {
     return fetch('https://photon.komoot.io/api/?limit=8&lang=en&q=' + encodeURIComponent(q)).then(function (r) { if (!r.ok) throw 0; return r.json(); })
       .then(function (j) { return (j.features || []).filter(function (f) { var cc = String((f.properties || {}).countrycode || '').toUpperCase(); return !isos.length || isos.indexOf(cc) >= 0; }); });
+  }
+  function wikiSearch(q) {
+    var lang = /[\u0590-\u05FF]/.test(q) ? 'he' : 'en';
+    var u = 'https://' + lang + '.wikipedia.org/w/api.php?action=query&format=json&origin=*&generator=search&gsrlimit=6&prop=coordinates%7Cdescription&coprimary=primary&gsrsearch=' + encodeURIComponent(q);
+    return fetch(u).then(function (r) { return r.json(); }).then(function (j) {
+      return Object.keys((j.query || {}).pages || {}).map(function (k) { return j.query.pages[k]; })
+        .filter(function (pg) { return pg.coordinates && pg.coordinates[0]; })
+        .sort(function (a, b) { return a.index - b.index; })
+        .map(function (pg) { return { kind: 'city', main: pg.title, sub: pg.description || '', value: pg.title, lat: pg.coordinates[0].lat, lon: pg.coordinates[0].lon, wiki: true }; });
+    }).catch(function () { return []; });
   }
   function placeSearch(q, restrictToTrip) {
     q = String(q || '').trim(); if (q.length < 2) return Promise.resolve([]);
@@ -222,6 +232,8 @@
       });
     });
     return p.catch(function () { return []; }).then(function (list) {
+      return list.length ? list : wikiSearch(q);
+    }).then(function (list) {
       var seen = {}; return list.filter(function (x) { var k = norm(x.main + '|' + x.sub); if (seen[k]) return false; seen[k] = 1; return true; }).slice(0, 7);
     });
   }
@@ -580,7 +592,14 @@
     var isos = tripCountryIsos(), key = isos.join(',') + '|' + norm(q);
     if (geoCache[key] !== undefined) { var c = geoCache[key]; if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; } return Promise.resolve(c); }
     return nominatimSearch(q, isos, 1).then(function (rows) {
-      var r = rows && rows[0], c = r ? { lat: +(+r.lat).toFixed(6), lon: +(+r.lon).toFixed(6), exact: true } : null;
+      var r = rows && rows[0];
+      if (r) return { lat: +(+r.lat).toFixed(6), lon: +(+r.lon).toFixed(6), exact: true };
+      if (q.split(/\s+/).length > 4) return null;
+      return wikiSearch(q).then(function (w) {
+        var nq = norm(q).replace(/[^\p{L}\p{N} ]/gu, ''), hit = w.find(function (x) { var nt = norm(x.main).replace(/\s*\(.*\)$/, '').replace(/[^\p{L}\p{N} ]/gu, ''); return nt && (nt === nq || (nt.length > 3 && nq.indexOf(nt) === 0 && nq.length - nt.length < 12)); });
+        return hit ? { lat: +(+hit.lat).toFixed(6), lon: +(+hit.lon).toFixed(6), exact: true } : null;
+      });
+    }).then(function (c) {
       geoCache[key] = c; lsSet(GEO_KEY, geoCache);
       if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; }
       return c;
@@ -656,7 +675,7 @@
         (st.notes ? '<div class="tc-note">ℹ️ ' + esc(st.notes) + '</div>' : '') +
         '<div class="tc-stop-actions">' +
         (vague ? '<span class="tc-geo-hint">' + t('מיקום כללי — בחרו מקום מדויק דרך "עדכן"', 'General area — set an exact place via Edit') + '</span>' :
-          '<a href="#" class="tc-btn tc-btn-waze" data-tc-nav="waze" data-day="' + di + '" data-stop="' + si + '">Waze</a><a href="#" class="tc-btn tc-btn-soft" data-tc-nav="gmaps" data-day="' + di + '" data-stop="' + si + '">Google Maps</a>') +
+          '<span class="tc-geo-hint tc-geo-fail">' + t('לא נמצא מיקום מדויק — עדכנו את המקום כדי לנווט', 'No exact location — edit the place to navigate') + '</span><a href="#" class="tc-btn tc-btn-waze" data-tc-nav="waze" data-day="' + di + '" data-stop="' + si + '">Waze</a><a href="#" class="tc-btn tc-btn-soft" data-tc-nav="gmaps" data-day="' + di + '" data-stop="' + si + '">Google Maps</a>') +
         '<button type="button" class="tc-btn tc-btn-ghost" data-tc-edit-stop="' + si + '">✏️ ' + t('עדכן', 'Edit') + '</button>' +
         '<button type="button" class="tc-btn tc-btn-ghost tc-danger-text" data-tc-remove-stop="' + si + '">🗑 ' + t('הסר', 'Remove') + '</button>' +
         '</div></div></li>';
@@ -834,7 +853,20 @@
     var my = ++accountSeq;
     loadMyTrips(u).then(function (trips) { if (my === accountSeq) paintAccount(box, trips); });
   };
-  var accountSeq = 0;
+  var accountSeq = 0, accountObserved = false;
+  function observeAccount() {
+    var box = $('tcAccountBody'); if (!box || accountObserved) return; accountObserved = true;
+    var t0 = 0;
+    new MutationObserver(function () {
+      if (!box.querySelector('.tc-v141-account-trip')) return;
+      clearTimeout(t0);
+      t0 = setTimeout(function () {
+        var u = null; try { u = tcCustomer(); } catch (e) {}
+        var my = ++accountSeq;
+        (lastTrips.length ? Promise.resolve(lastTrips) : loadMyTrips(u)).then(function (tr) { if (my === accountSeq) paintAccount(box, tr); });
+      }, 30);
+    }).observe(box, { childList: true });
+  }
   function loadMyTrips(u) {
     var sb = null; try { sb = tcSupabase(); } catch (e) {}
     if (!sb || !u || !u.id) return Promise.resolve([]);
@@ -897,7 +929,7 @@
     });
   }
   function boot() {
-    relabelCountryChips();
+    relabelCountryChips(); observeAccount();
     document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1[0-6]\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1[0-6]\d/, 'V170'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });
