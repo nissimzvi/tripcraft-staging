@@ -831,9 +831,24 @@
     if (origAccount) origAccount();
     var box = $('tcAccountBody'); var u = null; try { u = tcCustomer(); } catch (e) {}
     if (!box || !u) return;
-    var trips = []; try { trips = (tcCloudTripsCache || []).slice(); } catch (e) {}
-    var seen = {}; trips = trips.filter(function (p) { if (!p.tripId || seen[p.tripId]) return false; seen[p.tripId] = 1; return true; });
-    trips.sort(function (a, b) { return String((b.tripDraft || {}).updatedAt || b.updated_at || '').localeCompare(String((a.tripDraft || {}).updatedAt || a.updated_at || '')); });
+    var my = ++accountSeq;
+    loadMyTrips(u).then(function (trips) { if (my === accountSeq) paintAccount(box, trips); });
+  };
+  var accountSeq = 0;
+  function loadMyTrips(u) {
+    var sb = null; try { sb = tcSupabase(); } catch (e) {}
+    if (!sb || !u || !u.id) return Promise.resolve([]);
+    return sb.from('trips').select('id,name,destination,start_date,end_date,draft,updated_at').eq('user_id', u.id).order('updated_at', { ascending: false })
+      .then(function (r) {
+        if (r.error) throw r.error;
+        return (r.data || []).filter(function (x) { var st = String(((x.draft || {}).status) || '').toLowerCase(), bs = String(((x.draft || {}).buildStatus) || '').toLowerCase(); return String(x.id).indexOf('TC-PREFLIGHT-') !== 0 && st !== 'building' && st !== 'pending' && bs !== 'building'; })
+          .map(function (x) { return { tripId: x.id, tripName: x.name, destination: x.destination, start: x.start_date, end: x.end_date, tripDraft: x.draft, updated_at: x.updated_at }; });
+      }).catch(function (e) { console.warn('V170 trips load failed', e); return null; });
+  }
+  var lastTrips = [];
+  function paintAccount(box, trips) {
+    if (trips === null) return; // keep whatever the older renderer showed
+    lastTrips = trips;
     var list = box.querySelector('.tc-trip-list');
     var html = trips.length ? trips.map(function (p) {
       var dr = p.tripDraft || {}, days = (dr.days || []).length, url = tripUrl(p.tripId), country = (dr.plannerProfile || {}).country || dr.country || '';
@@ -847,10 +862,20 @@
     var old = box.querySelectorAll('.tc-v141-account-trip'); old.forEach(function (o) { o.remove(); });
     if (!list) { list = document.createElement('div'); list.className = 'tc-trip-list'; box.appendChild(list); }
     list.innerHTML = html;
-  };
+  }
   try { tcRenderAccount = window.tcRenderAccount; } catch (e) {}
+  function openTrip(id) {
+    var rec = lastTrips.find(function (x) { return x.tripId === id; });
+    if (!rec || !rec.tripDraft) { try { tcOpenPurchasedTrip(id); } catch (x) {} return; }
+    try {
+      planner.draft = JSON.parse(JSON.stringify(rec.tripDraft)); planner.draft.tripId = id; planner.currentTripId = id;
+      try { tcFillPlannerFromDraft(planner.draft); } catch (x) {}
+      location.hash = '#planner';
+      setTimeout(function () { try { renderPlannerDraft(); } catch (x) {} var r = $('plannerResult'); r && r.scrollIntoView({ behavior: 'smooth' }); }, 120);
+    } catch (x) { try { tcOpenPurchasedTrip(id); } catch (y) {} }
+  }
   document.addEventListener('click', function (e) {
-    var o = e.target.closest('[data-acc-open]'); if (o) { try { tcOpenPurchasedTrip(o.dataset.accOpen); } catch (x) {} return; }
+    var o = e.target.closest('[data-acc-open]'); if (o) { openTrip(o.dataset.accOpen); return; }
     var c = e.target.closest('[data-acc-copy]'); if (c) { (navigator.clipboard ? navigator.clipboard.writeText(c.dataset.accCopy) : Promise.reject()).then(function () { toast(t('הקישור הועתק ✓', 'Link copied ✓')); }, function () { window.tcAlert(c.dataset.accCopy, { title: t('הקישור לטיול', 'Trip link') }); }); return; }
     var del = e.target.closest('[data-acc-del]'); if (del) {
       window.tcConfirm(t('למחוק את הטיול "' + del.dataset.name + '"? לא ניתן לבטל פעולה זו.', 'Delete "' + del.dataset.name + '"? This cannot be undone.'), { okText: t('מחק לצמיתות', 'Delete'), danger: true, icon: '🗑' }).then(function (ok) {
