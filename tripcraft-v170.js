@@ -526,9 +526,15 @@
   }
   function wrapInvoke() {
     var sb = null; try { sb = typeof tcSupabase === 'function' ? tcSupabase() : null; } catch (e) {}
-    if (!sb || !sb.functions || sb.functions.__v170) return;
-    var orig = sb.functions.invoke.bind(sb.functions);
-    sb.functions.invoke = function (fn, opts) {
+    if (!sb || !sb.functions) return;
+    // supabase-js creates a new FunctionsClient on every access of sb.functions,
+    // so the enrichment must live on the prototype, not on one instance.
+    var proto = Object.getPrototypeOf(sb.functions);
+    if (!proto || proto.__v170) return;
+    var protoInvoke = proto.invoke;
+    proto.__v170 = true;
+    proto.invoke = function (fn, opts) {
+      var orig = protoInvoke.bind(this);
       try {
         var body = opts && opts.body;
         if (body && typeof body === 'object' && body.action) {
@@ -557,7 +563,6 @@
         return res;
       });
     };
-    sb.functions.__v170 = true;
   }
 
   // progress overlay that follows the real phases and never freezes
