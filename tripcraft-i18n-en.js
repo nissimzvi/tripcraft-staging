@@ -3,6 +3,7 @@
 (function () {
   'use strict';
   if ((document.documentElement.lang || '').indexOf('en') !== 0) return;
+  if (window.TC_I18N_EN) return; window.TC_I18N_EN = true;
   var D = {
     'התקן אפליקציה': 'Install app', 'עברית': 'עברית',
     'אשף תכנון, עריכת ימים ושיחה עם עוזר התכנון.': 'Planning wizard, day editing and a chat with the planning assistant.',

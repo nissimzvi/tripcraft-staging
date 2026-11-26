@@ -10,6 +10,10 @@
 
   var LANG = (document.documentElement.lang || 'he').indexOf('en') === 0 ? 'en' : 'he';
   var HE = LANG === 'he';
+  // EN toggle on the Hebrew page: load the full English dictionary too
+  if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=182'; document.head.appendChild(i18s); } catch (e) {}
+  }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
