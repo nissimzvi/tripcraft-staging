@@ -771,8 +771,27 @@
     var tpl = String((window.TRIPCRAFT_CONFIG || {}).bookingAffiliateTemplate || '');
     var q = [name, area].filter(Boolean).join(', ');
     var base = 'https://www.booking.com/searchresults.html?ss=' + encodeURIComponent(q) + (ci ? '&checkin=' + ci : '') + (co ? '&checkout=' + co : '') + '&group_adults=' + (adults || 2) + '&no_rooms=' + (rooms || 1) + '&lang=' + (HE ? 'he' : 'en-gb');
+    base = withBookingAid(base);
     return tpl && tpl.indexOf('{url}') >= 0 ? tpl.replace('{url}', encodeURIComponent(base)) : base;
   }
+  // Booking affiliate: set TRIPCRAFT_CONFIG.bookingAid (the aid number from the Booking Partner Centre).
+  // Every booking.com link then carries aid + a label that identifies TripCraft and the trip.
+  function bookingAid() { return String((window.TRIPCRAFT_CONFIG || {}).bookingAid || '').replace(/\D/g, ''); }
+  function withBookingAid(url) {
+    var aid = bookingAid(); if (!aid) return url;
+    try {
+      var u = new URL(url); if (!/(^|\.)booking\.com$/i.test(u.hostname)) return url;
+      u.searchParams.set('aid', aid);
+      var d = draft(); u.searchParams.set('label', 'tripcraft' + (d && d.tripId ? '-' + d.tripId : '') + '-' + (HE ? 'he' : 'en'));
+      return u.toString();
+    } catch (e) { return url; }
+  }
+  window.tcWithBookingAid = withBookingAid;
+  // any older booking.com link on the page gets the affiliate parameters at click time
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('a[href*="booking.com"]'); if (!a || !bookingAid()) return;
+    var fixed = withBookingAid(a.href); if (fixed !== a.href) a.href = fixed;
+  }, true);
   function renderHotels() {
     var d = draft(), res = $('plannerResult'); if (!d || !res) return;
     var groups = hotelsFromAi(d), box = $('tcHotelPicks');
