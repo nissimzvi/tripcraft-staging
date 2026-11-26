@@ -200,7 +200,7 @@
     scored.sort(function (x, y) { return y[0] - x[0]; });
     return scored.slice(0, 8).map(function (x) {
       var a = x[1], cityLbl = HE ? (a[7] || a[2]) : a[2], nameLbl = HE && a[6] && norm(a[6]) !== norm(a[7]) ? a[6] : a[1];
-      return { kind: 'airport', main: cityLbl + ' · ' + nameLbl, sub: a[1] + ' · ' + countryLabel(a[3]), value: a[1] + ' (' + a[0] + ')', code: a[0], lat: a[4], lon: a[5] };
+      return { kind: 'airport', main: cityLbl + ' · ' + nameLbl, sub: (HE ? a[1] + ' · ' : '') + countryLabel(a[3]), value: a[1] + ' (' + a[0] + ')', code: a[0], lat: a[4], lon: a[5] };
     });
   }
   window.tcAirportLocal = airportSearch;

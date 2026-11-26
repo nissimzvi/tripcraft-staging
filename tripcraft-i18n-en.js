@@ -109,8 +109,14 @@
     'שעת נחיתה': 'Landing time', 'שעת המראה בחזרה': 'Return takeoff time', '(חובה אם הוזנה טיסה)': '(required if a flight is entered)', 'תאריך יציאה': 'Departure date', 'תאריך חזרה': 'Return date',
     'הבא': 'Next', 'הקודם': 'Back', 'בנה טיול': 'Build trip', 'סוג הקבוצה': 'Group type', '2. מי נוסע?': '2. Who is travelling?', '3. איך אתם אוהבים לטייל?': '3. How do you like to travel?',
     'מה מעניין אתכם?': 'What interests you?', 'קצב': 'Pace', 'הליכה יומית נוחה': 'Comfortable daily walking', 'נהיגה יומית רצויה': 'Preferred daily driving', '1. לאן ומתי נוסעים?': '1. Where and when?',
-    'מחפש… / Searching…': 'Searching…', 'לא נמצאה התאמה מדויקת. אפשר להמשיך להקליד.': 'No exact match. Keep typing.'
+    'מחפש… / Searching…': 'Searching…',
+    'בנה טיול חדש': 'Build a new trip', 'התנתק': 'Sign out', 'הטיולים שלי': 'My trips', 'החשבון שלי': 'My account',
+    'כל טיול נשמר אוטומטית בחשבון. אפשר לפתוח ולערוך אותו, להעתיק את הקישור האישי או למחוק אותו.': 'Every trip is saved to your account automatically. Open and edit it, copy its personal link or delete it.',
+    'כאן נשמרת היסטוריית הטיולים שלכם — שם הטיול, היעד, התאריכים והקישור האישי, גם לאחר שהטיול הסתיים.': 'Your trip history lives here — name, destination, dates and personal link, even after the trip is over.',
+    'הקישור הועתק': 'Link copied',
+    'אם תבחרו מלונות אחר כך, TripCraft יחשב מחדש את המסלול. אם מקום הלינה החדש חורג מאזור הלינה או מזמן הסטייה שבחרתם, תופיע התרעה לפני השינוי ולא נעדכן את המסלול בלי אישורכם.': 'If you pick hotels later, TripCraft recalculates the route. If the new stay is outside the stay area or the detour limit you chose, you will be warned before anything changes — the route is never updated without your approval.', 'פתח / ערוך טיול': 'Open / edit trip', 'מחק טיול': 'Delete trip', 'לא נמצאה התאמה מדויקת. אפשר להמשיך להקליד.': 'No exact match. Keep typing.'
   };
+  var ATTR = { 'אפשרויות נגישות': 'Accessibility options', 'סגור': 'Close', 'סגור תפריט': 'Close menu', 'ניווט ראשי': 'Main navigation', 'שלבי יעד, טיסות ותאריכים': 'Destination, dates and flights steps', 'חודש קודם': 'Previous month', 'חודש הבא': 'Next month', 'תפריט': 'Menu', 'פתח תפריט': 'Open menu', 'הסר': 'Remove' };
   var PH = {}, TX = {};
   Object.keys(D).forEach(function (k) { if (k.indexOf('PH:') === 0) PH[k.slice(3)] = D[k]; else if (k.indexOf('OPT:') !== 0) TX[k] = D[k]; });
   var HEB = /[֐-׿]/;
@@ -122,16 +128,17 @@
       var p = node.parentElement; if (!p || /^(SCRIPT|STYLE)$/.test(p.tagName) || p.closest('[data-tc-no-i18n],.tc-hebdate,.lang-link,[lang="he"]')) return;
       var raw = node.nodeValue; if (!HEB.test(raw)) return;
       var key = raw.replace(/\s+/g, ' ').trim();
-      if (TX[key]) node.nodeValue = raw.replace(raw.trim(), TX[key]);
+      if (TX[key] && TX[key] !== key) { var nv = raw.replace(raw.trim(), TX[key]); if (nv !== raw) node.nodeValue = nv; }
       else if (/^\d+ ימים · \d+ נוסעים · /.test(key)) node.nodeValue = key.replace(/(\d+) ימים · (\d+) נוסעים · (.*)/, function (_, a, b, c) { return a + ' days · ' + b + ' travellers · ' + (TX[c] || c); });
     });
-    root.querySelectorAll('[placeholder]').forEach(function (e) { var k = e.placeholder.trim(); if (PH[k]) e.placeholder = PH[k]; });
-    root.querySelectorAll('option').forEach(function (o) { var k = o.textContent.trim(); if (TX[k]) o.textContent = TX[k]; });
+    root.querySelectorAll('[placeholder]').forEach(function (e) { var k = e.placeholder.trim(); if (PH[k] && PH[k] !== k) e.placeholder = PH[k]; });
+    root.querySelectorAll('[aria-label],[title]').forEach(function (e) { ['aria-label', 'title'].forEach(function (at) { var v = e.getAttribute(at); if (v && HEB.test(v)) { var k = v.trim(), tv = ATTR[k] || TX[k]; if (tv && tv !== k) e.setAttribute(at, tv); } }); });
+    root.querySelectorAll('option').forEach(function (o) { var k = o.textContent.trim(); if (TX[k] && TX[k] !== k) o.textContent = TX[k]; });
   }
   function run() { tr(document.body); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
   var timer = 0;
   new MutationObserver(function () { clearTimeout(timer); timer = setTimeout(run, 120); })
-    .observe(document.body || document.documentElement, { childList: true, subtree: true, characterData: true });
+    .observe(document.body || document.documentElement, { childList: true, subtree: true });
   window.tcI18nEn = { dict: D, translate: tr };
 })();
