@@ -533,8 +533,14 @@
         var body = opts && opts.body;
         if (body && typeof body === 'object' && body.action) {
           var prof = fullProfile();
-          if (body.trip && typeof body.trip === 'object' && document.querySelector('.planner-step[data-step="1"]')) {
-            if (body.action === 'build_trip' || !body.trip.preferences) {
+          var isBuild = body.action === 'build_trip' || body.action === 'build_trip_async';
+          if (body.trip && typeof body.trip === 'object' && !isBuild && !body.trip.preferences) {
+            // edits / rain / verify / hotels of an existing trip: use the preferences saved with THAT trip
+            var dd = draft(), pp = dd && dd.plannerProfile;
+            if (pp) { body.trip.preferences = Object.assign({}, pp, { ai_notes: pp.aiNotes || '' }); body.trip.ai_notes = pp.aiNotes || ''; body.trip.strict_instructions = strictInstructions(pp); }
+          }
+          if (body.trip && typeof body.trip === 'object' && isBuild && document.querySelector('.planner-step[data-step="1"]')) {
+            {
               body.trip.preferences = prof;
               body.trip.strict_instructions = strictInstructions(prof);
               body.trip.hotel_recommendations_per_area = 3;
@@ -1015,6 +1021,167 @@
   window.tcStartCleanTrip = function () { try { localStorage.removeItem('tc_v170_ai_notes'); } catch (e) {} var ta = $('tcAiNotes'); if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input')); } return cleanWithNotes.apply(this, arguments); };
 
   /* ================================================================
+   * 11c. Background builds: the trip is built on the server; the user can keep browsing
+   * ================================================================ */
+  var JOBS_KEY = 'tc_v171_jobs', JOB_MAX_MS = 210000;
+  function jobsGet() { return lsGet(JOBS_KEY, []); }
+  function jobsSet(a) { lsSet(JOBS_KEY, a); renderJobBar(); }
+  function jobUpdate(id, patch) { jobsSet(jobsGet().map(function (j) { return j.id === id ? Object.assign({}, j, patch) : j; })); }
+  function jobRemove(id) { jobsSet(jobsGet().filter(function (j) { return j.id !== id; })); }
+  function fnName() { return (window.TRIPCRAFT_CONFIG && window.TRIPCRAFT_CONFIG.aiFunctionName) || 'tripcraft-ai'; }
+  function sbc() { try { return tcSupabase(); } catch (e) { return null; } }
+  function me() { try { return tcCustomer(); } catch (e) { return null; } }
+
+  function renderJobBar() {
+    var jobs = jobsGet(), bar = $('tcJobBar');
+    if (!jobs.length) { if (bar) bar.remove(); return; }
+    if (!bar) { bar = document.createElement('div'); bar.id = 'tcJobBar'; bar.setAttribute('role', 'status'); var hdr = document.querySelector('.tc-header'); hdr ? hdr.insertAdjacentElement('afterend', bar) : document.body.prepend(bar); }
+    bar.innerHTML = jobs.map(function (j) {
+      var sec = Math.round((Date.now() - j.startedAt) / 1000), pct = Math.min(95, Math.round(100 * (1 - Math.exp(-sec / 40))));
+      if (j.state === 'failed') return '<div class="tc-job tc-job-fail">⚠️ ' + esc(t('בניית "' + j.name + '" נכשלה', 'Building "' + j.name + '" failed')) + ' <button type="button" class="tc-btn tc-btn-soft" data-job-retry="' + esc(j.id) + '">' + t('נסה שוב', 'Retry') + '</button> <button type="button" class="tc-btn tc-btn-ghost" data-job-dismiss="' + esc(j.id) + '">' + t('סגור', 'Dismiss') + '</button></div>';
+      return '<div class="tc-job"><span class="tc-job-spin" aria-hidden="true"></span><span>' + esc(t('הטיול "' + j.name + '" נבנה ברקע — אפשר להמשיך לגלוש', '"' + j.name + '" is being built in the background — keep browsing')) + '</span><span class="tc-job-pct">' + pct + '%</span><div class="tc-job-track"><i style="width:' + pct + '%"></i></div></div>';
+    }).join('');
+  }
+  setInterval(function () { if (jobsGet().some(function (j) { return j.state !== 'failed'; })) renderJobBar(); }, 1000);
+
+  function notify(title, body) {
+    try { if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') new Notification(title, { body: body, icon: 'icons/icon-192.png' }); } catch (e) {}
+  }
+  function mapDays(ai) {
+    return (ai.days || []).map(function (day) {
+      return { date: day.date || '', title: day.title || '', lodging: day.overnight_location || '', summary: day.day_summary || '', routeSummary: day.route_summary || '',
+        stops: (day.activities || []).map(function (a) { return { time: a.time || '', name: a.name || '', place: a.location || a.name || '', what: a.description || a.name || '', durationMinutes: Number(a.duration_minutes || 0), driveMinutes: Number(a.drive_minutes || 0), notes: a.notes || '', estimatedCost: Number(a.estimated_cost || 0) }; }).filter(function (s) { return s.place; }) };
+    });
+  }
+  function staysFrom(days) {
+    var out = [], cur = null;
+    days.forEach(function (d, i) {
+      var loc = String(d.lodging || '').trim(); if (i === days.length - 1) loc = ''; // last day: no overnight
+      if (cur && loc && norm(loc) === norm(cur.area)) { cur.nights++; cur.check_out = nextDay(d.date); return; }
+      if (loc) { cur = { area: loc, check_in: d.date, check_out: nextDay(d.date), nights: 1 }; out.push(cur); } else cur = null;
+    });
+    return out;
+  }
+  function nextDay(iso) { var d = isoDate(iso); if (!d) return ''; d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  // save a draft object without disturbing whatever trip the user is looking at now
+  function saveDraftObject(obj) {
+    var p = P(); if (!p) return Promise.resolve(false);
+    var prev = p.draft, showing = prev && prev.tripId === obj.tripId;
+    p.draft = obj;
+    return Promise.resolve(window.tcSaveCurrentTrip(false)).catch(function () { return false; }).then(function (ok) {
+      if (!showing) p.draft = prev; else { try { renderPlannerDraft(); } catch (e) {} }
+      return ok;
+    });
+  }
+  function enrichInBackground(obj, request) {
+    var sb = sbc(); if (!sb) return;
+    var u = me(), base = { trip_id: obj.tripId, user_id: (u && u.id) || null, trip: request };
+    var verify = sb.functions.invoke(fnName(), { body: Object.assign({ action: 'verify_trip', itinerary: obj.aiItinerary }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
+    var hotels = sb.functions.invoke(fnName(), { body: Object.assign({ action: 'hotels', stays: staysFrom(obj.days) }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
+    Promise.all([verify, hotels]).then(function (res) {
+      var p = P(), target = p && p.draft && p.draft.tripId === obj.tripId ? p.draft : obj;
+      if (res[0]) { target.verification = res[0].verification || null; target.aiUsage = Object.assign({}, target.aiUsage, { verify: res[0].usage || null, verifyCostUsd: res[0].cost_usd || 0 }); }
+      if (res[1]) { target.aiItinerary = Object.assign({}, target.aiItinerary, { hotel_recommendations: res[1].hotel_recommendations || [] }); }
+      target.buildStatus = 'verified-save';
+      if (res[0] || res[1]) saveDraftObject(target).then(function () { if (res[1] && (res[1].hotel_recommendations || []).length) toast(t('🏨 המלונות המומלצים נוספו לטיול', '🏨 Recommended hotels were added')); });
+    });
+  }
+  function materialize(job, payload) {
+    var ai = payload && payload.itinerary; if (!ai || !Array.isArray(ai.days) || !ai.days.length) return Promise.reject(new Error('EMPTY'));
+    var prof = job.profile || {};
+    var obj = { tripId: job.tripId, name: job.name || ai.title, country: prof.country || ai.country || '', year: String(prof.start || '').slice(0, 4), sourceType: 'ai', status: 'ready', buildStatus: 'built',
+      plannerProfile: Object.assign({}, prof, { aiNotes: job.aiNotes || prof.aiNotes || '' }), changeCount: 0, maxChanges: 5, days: mapDays(ai), aiItinerary: ai,
+      aiUsage: { build: payload.usage || null, buildCostUsd: payload.cost_usd || 0 }, verification: null };
+    var p = P(), onPlanner = location.hash === '#planner' && (!p.draft || !p.draft.tripId || p.draft.tripId === job.tripId);
+    if (onPlanner) { p.draft = obj; p.currentTripId = obj.tripId; }
+    return saveDraftObject(obj).then(function (ok) {
+      if (!ok) throw new Error('SAVE_FAILED');
+      forgetWizardDraft(); jobRemove(job.id);
+      if (onPlanner) { try { renderPlannerDraft(); } catch (e) {} }
+      toastAction(t('✓ הטיול "' + obj.name + '" מוכן!', '✓ "' + obj.name + '" is ready!'), t('פתח את הטיול', 'Open trip'), function () { lastTrips = []; openTripObject(obj); });
+      notify('TripCraft', t('הטיול "' + obj.name + '" מוכן', '"' + obj.name + '" is ready'));
+      try { if (location.hash === '#account') window.tcRenderAccount(); } catch (e) {}
+      enrichInBackground(obj, job.request);
+    });
+  }
+  function openTripObject(obj) {
+    var p = P(); p.draft = obj; p.currentTripId = obj.tripId;
+    try { tcFillPlannerFromDraft(obj); } catch (e) {}
+    location.hash = '#planner';
+    setTimeout(function () { try { renderPlannerDraft(); } catch (e) {} var r = $('plannerResult'); r && r.scrollIntoView({ behavior: 'smooth' }); }, 150);
+  }
+  function toastAction(msg, label, fn) {
+    var box = $('tcToastStack') || (function () { toast(' ', 'ok'); return $('tcToastStack'); })();
+    var el = document.createElement('div'); el.className = 'tc-toast tc-toast-ok tc-toast-action';
+    el.innerHTML = '<span>' + esc(msg) + '</span><button type="button">' + esc(label) + '</button>';
+    el.style.pointerEvents = 'auto'; box.appendChild(el); requestAnimationFrame(function () { el.classList.add('in'); });
+    el.querySelector('button').addEventListener('click', function () { el.remove(); fn(); });
+    setTimeout(function () { el.classList.remove('in'); setTimeout(function () { el.remove(); }, 300); }, 12000);
+  }
+  var polling = {};
+  function poll(job) {
+    if (polling[job.id]) return; polling[job.id] = true;
+    (function tick() {
+      var cur = jobsGet().find(function (j) { return j.id === job.id; });
+      if (!cur || cur.state === 'failed') { delete polling[job.id]; return; }
+      var sb = sbc(); if (!sb || !me()) { setTimeout(tick, 5000); return; }
+      sb.from('tripcraft_build_jobs').select('status,result,error').eq('id', job.id).maybeSingle().then(function (r) {
+        var row = r && r.data;
+        if (row && row.status === 'done') { delete polling[job.id]; materialize(cur, row.result).catch(function (e) { fail(cur, e && e.message); }); return; }
+        if ((row && row.status === 'failed') || Date.now() - cur.startedAt > JOB_MAX_MS) { delete polling[job.id]; fail(cur, row && row.error); return; }
+        setTimeout(tick, 4000);
+      }, function () { setTimeout(tick, 6000); });
+    })();
+  }
+  function fail(job, why) {
+    console.warn('V171 build job failed', why);
+    jobUpdate(job.id, { state: 'failed', error: String(why || '') });
+    toast(t('בניית הטיול "' + job.name + '" נכשלה. אפשר לנסות שוב מהפס העליון.', 'Building "' + job.name + '" failed. You can retry from the top bar.'), 'error');
+    notify('TripCraft', t('בניית הטיול נכשלה', 'The trip build failed'));
+  }
+  function startJob(request, profile, name, tripId, aiNotes) {
+    var sb = sbc(), u = me(); if (!sb || !u) return Promise.reject(new Error(t('אין חיבור לחשבון', 'Not signed in')));
+    return sb.functions.invoke(fnName(), { body: { action: 'build_trip_async', trip_id: tripId, user_id: u.id || null, trip: request } }).then(function (r) {
+      var d = r && r.data;
+      if (!d || !d.ok || !d.job_id) throw new Error((d && d.error) || (r && r.error && r.error.message) || 'QUEUE_FAILED');
+      var job = { id: d.job_id, tripId: tripId, name: name, startedAt: Date.now(), state: 'running', profile: profile, request: request, aiNotes: aiNotes };
+      jobsSet(jobsGet().concat([job])); poll(job); return job;
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var r = e.target.closest('[data-job-retry]'), x = e.target.closest('[data-job-dismiss]');
+    if (x) { jobRemove(x.dataset.jobDismiss); return; }
+    if (r) { var j = jobsGet().find(function (q) { return q.id === r.dataset.jobRetry; }); if (!j) return; jobRemove(j.id); startJob(j.request, j.profile, j.name, j.tripId, j.aiNotes).then(function () { toast(t('הבנייה התחילה מחדש ברקע', 'Build restarted in the background')); }, function (er) { toast(String(er.message || er), 'error'); }); }
+  });
+
+  // "Build trip": queue on the server and free the user immediately
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('#plannerBuild'); if (!btn) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    if (!me()) { try { sessionStorage.setItem('tc_return_after_login', '#planner'); sessionStorage.setItem('tc_after_login_action', 'build_trip'); } catch (x) {} location.hash = '#login'; return; }
+    if (btn.dataset.busy === '1') return;
+    var d; try { d = plannerData(); } catch (x) { return; }
+    if (!d.tripName || !d.country || !d.start || !d.end) { window.tcAlert(t('חסרים שם טיול, מדינה או תאריכים.', 'Trip name, country or dates are missing.')); return; }
+    try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission(); } catch (x) {}
+    btn.dataset.busy = '1'; btn.disabled = true; var label = btn.textContent; btn.textContent = t('שולח לבנייה…', 'Sending…');
+    var p = P(), tripId = (p.currentTripId && !(p.draft && p.draft.tripId === p.currentTripId && p.draft.status === 'ready')) ? p.currentTripId : (window.tcNewTripId ? window.tcNewTripId() : 'TC-' + Date.now());
+    var lang = HE ? 'he' : 'en';
+    var request = { country: d.country, region: d.region || '', destination: d.destination, geographic_bound: { country: d.country, strict: true, allow_cross_border: (d.countries || []).length > 1, allowed_countries: d.countries },
+      start_date: d.start, end_date: d.end, travelers: d.people, language: lang, intensity: d.pace, trip_name: d.tripName, group: d.group, children: d.children, transport: d.transport, interests: d.interests,
+      must: d.must, avoid: d.avoid, notes: d.free, arrival_airport: d.arrivalAirport || '', departure_airport: d.departureAirport || d.arrivalAirport || '', arrival_time: d.arrivalTime || '', departure_time: d.departureTime || '' };
+    Promise.resolve(window.tcV163SavePreflight ? window.tcV163SavePreflight() : true)
+      .then(function () { return startJob(request, d, d.tripName, tripId, aiNotesValue()); })
+      .then(function () {
+        p.currentTripId = null;
+        toast(t('✓ הטיול נשלח לבנייה. אפשר להמשיך לגלוש — נודיע כשהוא מוכן (בערך דקה).', '✓ Your trip is being built. Keep browsing — we’ll let you know when it’s ready (about a minute).'));
+        location.hash = '#home'; window.scrollTo({ top: 0, behavior: 'smooth' });
+      })
+      .catch(function (er) { window.tcAlert(t('לא הצלחנו להתחיל את בניית הטיול: ', 'Could not start the build: ') + (er && er.message || er)); })
+      .then(function () { btn.dataset.busy = ''; btn.disabled = false; btn.textContent = label; });
+  }, true);
+  function resumeJobs() { jobsGet().forEach(function (j) { if (j.state !== 'failed') poll(j); }); renderJobBar(); }
+
+  /* ================================================================
    * 12. Boot
    * ================================================================ */
   function relabelCountryChips() {
@@ -1026,7 +1193,7 @@
     });
   }
   function boot() {
-    relabelCountryChips(); observeAccount(); buildNotesCard();
+    relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs();
     document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1[0-6]\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1[0-6]\d/, 'V170'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });

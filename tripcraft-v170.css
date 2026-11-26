@@ -259,3 +259,16 @@ body.tc-dialog-open{overflow:hidden}
 .tc-notes-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:12px}
 .tc-notes-actions .tc-btn{flex:0 1 auto;min-height:50px;padding-inline:22px}
 @media (max-width:700px){.tc-notes-card{padding:16px}.tc-notes-actions .tc-btn{flex:1 1 100%}.tc-notes-head h3{font-size:18px}}
+
+/* ---------- V171: background build status bar + actionable toast ---------- */
+#tcJobBar{position:sticky;top:var(--tc-header-h,64px);z-index:250;display:grid;gap:6px;padding:8px 16px;background:linear-gradient(90deg,#0d6b63,#13867c);color:#fff;box-shadow:0 6px 18px rgba(13,107,99,.25)}
+.tc-job{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-weight:600;font-size:14.5px;padding-bottom:6px}
+.tc-job-pct{margin-inline-start:auto;font-variant-numeric:tabular-nums;opacity:.9}
+.tc-job-track{position:absolute;inset-inline:0;bottom:0;height:3px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden}
+.tc-job-track i{display:block;height:100%;background:#fff;transition:width 1s linear}
+.tc-job-spin{width:16px;height:16px;border-radius:50%;border:2.5px solid rgba(255,255,255,.35);border-top-color:#fff;animation:tcSpin .9s linear infinite}
+@keyframes tcSpin{to{transform:rotate(360deg)}}
+.tc-job-fail{background:#fff3f2;color:#7a1d16;border-radius:12px;padding:8px 10px}
+.tc-job .tc-btn{min-height:34px;padding:6px 12px;font-size:13.5px}
+.tc-toast-action{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:start}
+.tc-toast-action button{flex:0 0 auto;border:0;border-radius:999px;background:#fff;color:#16794f;font:700 14px/1 inherit;padding:10px 14px;cursor:pointer}
