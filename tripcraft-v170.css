@@ -261,7 +261,7 @@ body.tc-dialog-open{overflow:hidden}
 @media (max-width:700px){.tc-notes-card{padding:16px}.tc-notes-actions .tc-btn{flex:1 1 100%}.tc-notes-head h3{font-size:18px}}
 
 /* ---------- V171: background build status bar + actionable toast ---------- */
-#tcJobBar{position:sticky;top:var(--tc-header-h,64px);z-index:250;display:grid;gap:6px;padding:8px 16px;background:linear-gradient(90deg,#0d6b63,#13867c);color:#fff;box-shadow:0 6px 18px rgba(13,107,99,.25)}
+#tcJobBar{position:sticky;top:var(--tc-header-h,64px);z-index:250;display:grid;gap:6px;padding:10px 16px;background:linear-gradient(90deg,#6d1426,#8e1b33);color:#fff;box-shadow:0 6px 18px rgba(109,20,38,.35)}
 .tc-job{position:relative;display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-weight:600;font-size:14.5px;padding-bottom:6px}
 .tc-job-pct{margin-inline-start:auto;font-variant-numeric:tabular-nums;opacity:.9}
 .tc-job-track{position:absolute;inset-inline:0;bottom:0;height:3px;background:rgba(255,255,255,.25);border-radius:3px;overflow:hidden}
@@ -272,3 +272,13 @@ body.tc-dialog-open{overflow:hidden}
 .tc-job .tc-btn{min-height:34px;padding:6px 12px;font-size:13.5px}
 .tc-toast-action{display:flex;align-items:center;justify-content:space-between;gap:12px;text-align:start}
 .tc-toast-action button{flex:0 0 auto;border:0;border-radius:999px;background:#fff;color:#16794f;font:700 14px/1 inherit;padding:10px 14px;cursor:pointer}
+
+/* ---------- V172: pending trip card in My account (bordeaux progress) ---------- */
+.tc-trip-pending{border:2px solid #b7465d;background:linear-gradient(180deg,#fff7f8,#fff)}
+.tc-trip-pending .tc-trip-art{filter:grayscale(.6);opacity:.7}
+.tc-trip-pending .tc-btn[disabled]{background:#e9eef0!important;color:#9aa8af!important;border-color:#e2e8eb!important;box-shadow:none!important;cursor:not-allowed}
+.tc-build-progress{position:relative;margin-top:10px;height:22px;border-radius:999px;background:#f3dfe3;overflow:hidden}
+.tc-build-progress i{position:absolute;inset-block:0;inset-inline-start:0;background:linear-gradient(90deg,#6d1426,#a3213d);border-radius:999px;transition:width 1s linear}
+.tc-build-progress span{position:relative;z-index:1;display:block;text-align:center;font:800 13px/22px inherit;color:#4a0d1a;text-shadow:0 0 6px #fff,0 0 2px #fff}
+.tc-trip-failed{border-color:#c2362b}
+.tc-trip-failed .tc-build-progress i{background:#c2362b}

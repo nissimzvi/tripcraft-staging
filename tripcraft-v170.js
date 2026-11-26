@@ -99,6 +99,25 @@
   }
 
   /* ================================================================
+   * 1b. Session: stay signed in while active and across tabs (Supabase session is the real auth)
+   * ================================================================ */
+  var AUTH_OK = 'tc_v142_auth_ok', AUTH_LAST = 'tc_v142_last_activity';
+  function hasSupabaseSession() {
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^sb-.*-auth-token$/.test(k)) { var v = JSON.parse(localStorage.getItem(k) || 'null'); var exp = v && (v.expires_at || (v.currentSession && v.currentSession.expires_at)); if (v && (v.refresh_token || (v.currentSession && v.currentSession.refresh_token))) return true; if (exp && exp * 1000 > Date.now()) return true; } } } catch (e) {}
+    return false;
+  }
+  function touchAuth() {
+    try { if (localStorage.getItem('tc_v433_customer') && hasSupabaseSession()) { localStorage.setItem(AUTH_LAST, String(Date.now())); sessionStorage.setItem(AUTH_OK, '1'); } } catch (e) {}
+  }
+  touchAuth(); // runs before the older idle guard resolves, so a valid session is never thrown out
+  var lastTouch = 0;
+  ['click', 'keydown', 'input', 'touchstart', 'scroll'].forEach(function (ev) {
+    document.addEventListener(ev, function () { if (Date.now() - lastTouch > 20000) { lastTouch = Date.now(); touchAuth(); } }, { capture: true, passive: true });
+  });
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') touchAuth(); }, true);
+  window.addEventListener('focus', touchAuth, true);
+
+  /* ================================================================
    * 2. Dates: correct weekday + Hebrew calendar date (shown in grey)
    * ================================================================ */
   var HE_DAYS = ['יום א׳', 'יום ב׳', 'יום ג׳', 'יום ד׳', 'יום ה׳', 'יום ו׳', 'שבת'];
@@ -323,8 +342,19 @@
    * 4. Wizard: order Destination -> Dates -> Flights (times after dates)
    * ================================================================ */
   var PART_CLASS = { 1: '.v59-destination', 2: '.v59-dates', 3: '.v59-flights' };
+  function isDomestic() { try { var c = plannerData().countries || []; return c.length > 0 && c.every(function (x) { return countryIso(x) === 'IL'; }); } catch (e) { return false; } }
+  function syncDomestic() {
+    var dom = isDomestic(), nav = document.querySelector('.step1-subnav span[data-part="3"]');
+    if (nav) nav.style.display = dom ? 'none' : '';
+    var sub = document.querySelector('.step1-subnav'); if (sub) sub.style.gridTemplateColumns = dom ? 'repeat(2,1fr)' : '';
+    if (dom) ['plArrivalAirport', 'plDepartureAirport', 'plArrivalTime', 'plDepartureTime'].forEach(function (id) { var e = $(id); if (e && e.value) { e.value = ''; e.dispatchEvent(new Event('input', { bubbles: true })); } });
+    return dom;
+  }
+  window.tcIsDomesticTrip = isDomestic;
+  var goingBack = false;
   function showPart(part) {
     part = Math.max(1, Math.min(3, Number(part) || 1));
+    if (part === 3 && !goingBack && syncDomestic()) { try { plannerStep1Part = 3; plannerShowStep(2); } catch (e) {} return; }
     try { plannerStep1Part = part; } catch (e) {}
     var step = document.querySelector('.planner-step[data-step="1"]');
     if (step) {
@@ -381,6 +411,7 @@
       }
     }
     if (part === 3) {
+      if (isDomestic()) return true;
       if (d.arrivalAirport || d.departureAirport) {
         if (!d.arrivalTime || !d.departureTime) { fieldError(!d.arrivalTime ? 'plArrivalTime' : 'plDepartureTime', t('הזנתם טיסה — נא להזין שעת נחיתה ושעת המראה בחזרה.', 'Flights entered: landing and return takeoff times are required.')); return false; }
         try {
@@ -397,6 +428,11 @@
   function fieldError(id, msg) { var el = $(id); toast(msg, 'error'); if (el) { el.classList.add('tc-invalid'); el.focus && el.focus(); setTimeout(function () { el.classList.remove('tc-invalid'); }, 2500); } }
   function openCalendar() { var b = $('plStartDisplay'); b && b.click(); }
   window.validatePlannerStep1Part = validatePart;
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#plannerPrev')) return;
+    var st = 0; try { st = planner.step; } catch (x) {}
+    if (st === 2 && isDomestic()) { e.preventDefault(); e.stopImmediatePropagation(); try { plannerStep1Part = 2; } catch (x) {} goingBack = true; try { plannerShowStep(1); } catch (x) {} goingBack = false; showPart(2); }
+  }, true);
   try { validatePlannerStep1Part = validatePart; } catch (e) {}
   var origValidateStep = window.validatePlannerStep;
   window.validatePlannerStep = function () {
@@ -412,6 +448,7 @@
 
   /* ---- travellers: never below one adult ---- */
   function travelerBands() { try { return JSON.parse(($('plAgesBands') || {}).value || '{}'); } catch (e) { return {}; } }
+  document.addEventListener('change', function (e) { if (e.target.closest && e.target.closest('#countryChoices')) setTimeout(syncDomestic, 0); }, true);
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('#travelerBands .traveler-band button'); if (!btn) return;
     setTimeout(function () {
@@ -493,7 +530,7 @@
     var p = fullProfile(), b = p.travelers_by_age || {}, bandNames = { adult: t('מבוגרים', 'Adults'), young: t('צעירים', 'Young adults'), teen: t('נוער', 'Teens'), kid: t('ילדים', 'Kids'), baby: t('תינוקות', 'Babies'), dogs: t('כלבים', 'Dogs') };
     var trav = Object.keys(b).filter(function (k) { return b[k] > 0; }).map(function (k) { return b[k] + ' ' + bandNames[k]; }).join(' · ');
     var nights = p.start && p.end ? Math.round((isoDate(p.end) - isoDate(p.start)) / 86400000) : 0;
-    var fl = p.flights.arrival_airport ? (p.flights.arrival_airport + ' · ' + p.flights.arrival_time + '  →  ' + p.flights.departure_airport + ' · ' + p.flights.departure_time) : t('ללא טיסות', 'No flights');
+    var fl = isDomestic() ? t('טיול בארץ — ללא טיסות', 'Domestic trip — no flights') : p.flights.arrival_airport ? (p.flights.arrival_airport + ' · ' + p.flights.arrival_time + '  →  ' + p.flights.departure_airport + ' · ' + p.flights.departure_time) : t('ללא טיסות', 'No flights');
     var html = '<div class="tc-sum-hero"><div><small>' + t('שם הטיול', 'Trip') + '</small><h3>' + esc(p.trip_name || '—') + '</h3></div><div class="tc-sum-dates">' + esc(niceDate(p.start)) + ' – ' + esc(niceDate(p.end)) + '<small>' + (nights + 1) + ' ' + t('ימים', 'days') + ' · ' + nights + ' ' + t('לילות', 'nights') + '</small>' + (HE && p.start ? '<span class="tc-hebdate">' + esc(hebrewDate(p.start)) + ' – ' + esc(hebrewDate(p.end)) + '</span>' : '') + '</div></div>';
     html += '<div class="tc-sum-grid">';
     var cLabels = (p.countries || []).filter(Boolean).map(function (c) { var iso = countryIso(c); return iso ? flag(iso) + ' ' + countryLabel(iso) : c; });
@@ -514,7 +551,8 @@
    * 6. AI requests: send the full profile + strict instructions; progress phases
    * ================================================================ */
   function strictInstructions(p) {
-    return [
+    var dom = false; try { dom = isDomestic(); } catch (e) {}
+    return (dom ? ['This is a DOMESTIC trip inside Israel for travelers who live in Israel: there are NO flights and NO airports. Day 1 starts from home in the morning and the last day ends back home; plan by car or the chosen transport, with realistic Israeli driving times, Shabbat/holiday opening hours and kosher-friendly options when relevant.'] : []).concat([
       'Follow every user selection exactly. Do not add countries, regions or activities the user excluded.',
       'Use ONLY the transport modes listed in transport. Respect max_daily_drive, comfortable_walking, pace and day_length on every day.',
       'Every item in must_see must appear in the itinerary. Never include anything matching avoid.',
@@ -522,7 +560,7 @@
       'Lodging: respect lodging.mode, types, price_level, hotel_stars and must_have. For each overnight area recommend exactly 3 real, currently operating hotels that match these filters.',
       'ai_notes are the traveler\'s own notes, written in their words. They are BINDING: apply every single one of them in the plan. If one cannot be applied, say exactly why in important_notes.',
       'If a selection is impossible, keep the closest valid option and explain it in a note instead of silently ignoring it.'
-    ];
+    ]);
   }
   function wrapInvoke() {
     var sb = null; try { sb = typeof tcSupabase === 'function' ? tcSupabase() : null; } catch (e) {}
@@ -551,6 +589,7 @@
               body.trip.strict_instructions = strictInstructions(prof);
               body.trip.hotel_recommendations_per_area = 3;
               if (prof.must_see.length) body.trip.must = prof.must_see.join(', ');
+              try { if (isDomestic()) { body.trip.domestic = true; body.trip.arrival_airport = ''; body.trip.departure_airport = ''; body.trip.arrival_time = ''; body.trip.departure_time = ''; } } catch (e) {}
               if (prof.ai_notes) { body.trip.ai_notes = prof.ai_notes; body.trip.notes = [body.trip.notes, 'הערות הנוסע (מחייב): ' + prof.ai_notes].filter(Boolean).join('\n'); }
             }
           }
@@ -926,6 +965,17 @@
         '<button type="button" class="tc-btn tc-btn-soft" data-acc-copy="' + esc(url) + '">🔗 ' + t('העתק קישור', 'Copy link') + '</button>' +
         '<button type="button" class="tc-btn tc-btn-ghost tc-danger-text" data-acc-del="' + esc(p.tripId) + '" data-name="' + esc(p.tripName || '') + '">🗑 ' + t('מחק', 'Delete') + '</button></div></article>';
     }).join('') : '<div class="tc-empty">' + t('עוד אין טיולים בחשבון. בואו נבנה את הראשון!', 'No trips yet. Let’s build your first one!') + '</div>';
+    var pending = jobsGet().map(function (j) {
+      var sec = Math.round((Date.now() - j.startedAt) / 1000), pct = j.state === 'failed' ? 100 : Math.min(95, Math.round(100 * (1 - Math.exp(-sec / 40))));
+      var prof = j.profile || {}, country = (prof.countries && prof.countries[0]) || prof.country || '';
+      return '<article class="tc-trip-card tc-trip-pending' + (j.state === 'failed' ? ' tc-trip-failed' : '') + '" data-job="' + esc(j.id) + '"><div class="tc-trip-art">' + flag(countryIso(country) || 'UN') + '</div><div class="tc-trip-info"><h3>' + esc(j.name) + '</h3>' +
+        '<div class="tc-muted">' + (j.state === 'failed' ? t('הבנייה נכשלה', 'Build failed') : t('הטיול נבנה עכשיו… אפשר להמשיך לגלוש', 'Your trip is being built… keep browsing')) + '</div>' +
+        '<div class="tc-trip-dates">' + fmt(prof.start) + ' – ' + fmt(prof.end) + '</div>' +
+        '<div class="tc-build-progress" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><i style="width:' + pct + '%"></i><span>' + pct + '%</span></div></div>' +
+        '<div class="tc-trip-actions">' + (j.state === 'failed' ? '<button type="button" class="tc-btn tc-btn-primary" data-job-retry="' + esc(j.id) + '">' + t('נסה שוב', 'Retry') + '</button><button type="button" class="tc-btn tc-btn-ghost" data-job-dismiss="' + esc(j.id) + '">' + t('הסר', 'Remove') + '</button>'
+          : '<button type="button" class="tc-btn tc-btn-primary" disabled>' + t('פתח / ערוך', 'Open / edit') + '</button><button type="button" class="tc-btn tc-btn-soft" disabled>🔗 ' + t('העתק קישור', 'Copy link') + '</button><button type="button" class="tc-btn tc-btn-ghost" disabled>🗑 ' + t('מחק', 'Delete') + '</button>') + '</div></article>';
+    }).join('');
+    if (pending) html = pending + (trips.length ? html : '');
     var old = box.querySelectorAll('.tc-v141-account-trip'); old.forEach(function (o) { o.remove(); });
     if (!list) { list = document.createElement('div'); list.className = 'tc-trip-list'; box.appendChild(list); }
     list.innerHTML = html;
@@ -1030,7 +1080,7 @@
    * ================================================================ */
   var JOBS_KEY = 'tc_v171_jobs', JOB_MAX_MS = 210000;
   function jobsGet() { return lsGet(JOBS_KEY, []); }
-  function jobsSet(a) { lsSet(JOBS_KEY, a); renderJobBar(); }
+  function jobsSet(a) { lsSet(JOBS_KEY, a); renderJobBar(); if (location.hash === '#account') setTimeout(function () { try { window.tcRenderAccount(); } catch (e) {} }, 50); }
   function jobUpdate(id, patch) { jobsSet(jobsGet().map(function (j) { return j.id === id ? Object.assign({}, j, patch) : j; })); }
   function jobRemove(id) { jobsSet(jobsGet().filter(function (j) { return j.id !== id; })); }
   function fnName() { return (window.TRIPCRAFT_CONFIG && window.TRIPCRAFT_CONFIG.aiFunctionName) || 'tripcraft-ai'; }
@@ -1039,7 +1089,7 @@
 
   function renderJobBar() {
     var jobs = jobsGet(), bar = $('tcJobBar');
-    if (!jobs.length) { if (bar) bar.remove(); return; }
+    if (!jobs.length || location.hash === '#account') { if (bar) bar.remove(); return; }
     if (!bar) { bar = document.createElement('div'); bar.id = 'tcJobBar'; bar.setAttribute('role', 'status'); var hdr = document.querySelector('.tc-header'); hdr ? hdr.insertAdjacentElement('afterend', bar) : document.body.prepend(bar); }
     bar.innerHTML = jobs.map(function (j) {
       var sec = Math.round((Date.now() - j.startedAt) / 1000), pct = Math.min(95, Math.round(100 * (1 - Math.exp(-sec / 40))));
@@ -1047,7 +1097,15 @@
       return '<div class="tc-job"><span class="tc-job-spin" aria-hidden="true"></span><span>' + esc(t('הטיול "' + j.name + '" נבנה ברקע — אפשר להמשיך לגלוש', '"' + j.name + '" is being built in the background — keep browsing')) + '</span><span class="tc-job-pct">' + pct + '%</span><div class="tc-job-track"><i style="width:' + pct + '%"></i></div></div>';
     }).join('');
   }
-  setInterval(function () { if (jobsGet().some(function (j) { return j.state !== 'failed'; })) renderJobBar(); }, 1000);
+  setInterval(function () {
+    if (!jobsGet().some(function (j) { return j.state !== 'failed'; })) return;
+    renderJobBar();
+    document.querySelectorAll('.tc-trip-pending[data-job]').forEach(function (card) {
+      var j = jobsGet().find(function (q) { return q.id === card.dataset.job; }); if (!j || j.state === 'failed') return;
+      var pct = Math.min(95, Math.round(100 * (1 - Math.exp(-((Date.now() - j.startedAt) / 1000) / 40)))), bar = card.querySelector('.tc-build-progress');
+      if (bar) { bar.querySelector('i').style.width = pct + '%'; bar.querySelector('span').textContent = pct + '%'; bar.setAttribute('aria-valuenow', pct); }
+    });
+  }, 1000);
 
   function notify(title, body) {
     try { if ('Notification' in window && Notification.permission === 'granted' && document.visibilityState !== 'visible') new Notification(title, { body: body, icon: 'icons/icon-192.png' }); } catch (e) {}
@@ -1178,8 +1236,9 @@
       .then(function () { return startJob(request, d, d.tripName, tripId, aiNotesValue()); })
       .then(function () {
         p.currentTripId = null;
-        toast(t('✓ הטיול נשלח לבנייה. אפשר להמשיך לגלוש — נודיע כשהוא מוכן (בערך דקה).', '✓ Your trip is being built. Keep browsing — we’ll let you know when it’s ready (about a minute).'));
-        location.hash = '#home'; window.scrollTo({ top: 0, behavior: 'smooth' });
+        toast(t('✓ הטיול נבנה עכשיו ב"החשבון שלי". אפשר להמשיך לגלוש — נודיע כשהוא מוכן (בערך דקה).', '✓ Your trip is being built in My account. Keep browsing — we’ll let you know when it’s ready (about a minute).'));
+        location.hash = '#account'; window.scrollTo({ top: 0, behavior: 'smooth' });
+        setTimeout(function () { try { window.tcRenderAccount(); } catch (e) {} }, 300);
       })
       .catch(function (er) { window.tcAlert(t('לא הצלחנו להתחיל את בניית הטיול: ', 'Could not start the build: ') + (er && er.message || er)); })
       .then(function () { btn.dataset.busy = ''; btn.disabled = false; btn.textContent = label; });
