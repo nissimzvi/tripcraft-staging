@@ -7,7 +7,7 @@
 (function () {
   'use strict';
   var MAX_EDITS = 5;
-  var EDIT_TIMEOUT_MS = 45000;
+  var EDIT_TIMEOUT_MS = 130000; // V170: AI edit returns the full itinerary and can take up to ~2 minutes
   var isEn = function () { return String(document.documentElement.lang || 'he').toLowerCase().indexOf('en') === 0; };
   var t = function (he, en) { return isEn() ? en : he; };
   var $ = function (id) { return document.getElementById(id); };
@@ -58,6 +58,7 @@
     return {
       title: d.name || '',
       country: d.country || '',
+      hotel_recommendations: ((d.aiItinerary || {}).hotel_recommendations) || [],
       days: (d.days || []).map(function (day) {
         return {
           date: day.date || '', title: day.title || '', overnight_location: day.lodging || '',
@@ -114,7 +115,7 @@
       if (data.itinerary && Array.isArray(data.itinerary.days)) days = fromItinerary(data.itinerary, d.days);
       else if (data.draft && Array.isArray(data.draft.days)) days = data.draft.days;
       if (!days || !days.length) throw new Error('AI_EMPTY');
-      return { days: days, message: data.message || t('עדכנתי את המסלול לפי הבקשה.', 'I updated the itinerary.'), source: 'ai' };
+      return { days: days, itinerary: data.itinerary || null, message: data.message || t('עדכנתי את המסלול לפי הבקשה.', 'I updated the itinerary.'), source: 'ai' };
     });
   }
 
@@ -169,7 +170,7 @@
     if (dayScope && !(d.days || [])[dayIndex]) { bubble(log, 'bot', escH(t('לא מצאתי את היום. סגרו ופתחו שוב את פירוט היום.', 'Day not found. Close and reopen day details.'))); return; }
     bubble(log, 'user', escH(text));
     input.value = '';
-    var thinking = bubble(log, 'bot tc-thinking', escH(t('מעדכן את המסלול…', 'Updating your itinerary…')));
+    var thinking = bubble(log, 'bot tc-thinking', escH(t('ה-AI מעדכן את המסלול… זה יכול לקחת עד דקה–שתיים.', 'The AI is updating your itinerary… this can take a minute or two.')));
     if (btn) { btn.dataset.busy = '1'; btn.disabled = true; }
     var snapshot = clone(d);
     remoteEdit(snapshot, text, dayScope ? 'day' : 'trip', dayIndex)
@@ -181,6 +182,7 @@
       .then(function (res) {
         var cur = P().draft;
         cur.days = res.days;
+        if (res.itinerary && Array.isArray(res.itinerary.hotel_recommendations)) cur.aiItinerary = Object.assign({}, cur.aiItinerary || {}, { hotel_recommendations: res.itinerary.hotel_recommendations });
         cur.changeCount = Number(cur.changeCount || 0) + 1;
         cur.changeLog = (cur.changeLog || []).concat([{ at: new Date().toISOString(), text: text.slice(0, 300), scope: scope, day: dayIndex, source: res.source }]);
         if (thinking) thinking.remove();
