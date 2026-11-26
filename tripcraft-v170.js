@@ -805,6 +805,7 @@
       var gm = row.querySelector('.day-mini-meta a[href*="google.com/maps"]'); if (gm) { var r = dayRouteUrl(day); if (r) gm.href = r; }
     });
     renderHotels();
+    healMissingEnrichment(d);
     var saved = d.status === 'ready' || /save/.test(String(d.buildStatus || ''));
     var disc = $('plannerDiscardTrip'); if (disc) disc.hidden = saved;
     var unsaved = $('tcV108SaveNotice'); if (unsaved) unsaved.style.display = saved ? 'none' : '';
@@ -1127,25 +1128,52 @@
   }
   function nextDay(iso) { var d = isoDate(iso); if (!d) return ''; d.setDate(d.getDate() + 1); return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
   // save a draft object without disturbing whatever trip the user is looking at now
+  // Background saves run one at a time: overlapping saves used to restore the wrong draft and drop hotels/verification.
+  var saveChain = Promise.resolve();
+  var latestById = {};
   function saveDraftObject(obj) {
-    var p = P(); if (!p) return Promise.resolve(false);
-    var prev = p.draft, showing = prev && prev.tripId === obj.tripId;
-    p.draft = obj;
-    return Promise.resolve(window.tcSaveCurrentTrip(false)).catch(function () { return false; }).then(function (ok) {
-      if (!showing) p.draft = prev; else { try { renderPlannerDraft(); } catch (e) {} }
-      return ok;
-    });
+    latestById[obj.tripId] = obj;
+    var run = function () {
+      var p = P(); if (!p) return false;
+      var cur = latestById[obj.tripId] || obj;
+      var prev = p.draft, showing = prev && prev.tripId === cur.tripId;
+      if (showing && prev !== cur) { Object.assign(prev, cur); cur = prev; latestById[cur.tripId] = cur; }
+      p.draft = cur;
+      return Promise.resolve(window.tcSaveCurrentTrip(false)).catch(function () { return false; }).then(function (ok) {
+        if (!showing) p.draft = prev; else { try { renderPlannerDraft(); } catch (e) {} }
+        return ok;
+      });
+    };
+    var next = saveChain.then(run, run);
+    saveChain = next.catch(function () {});
+    return next;
   }
-  function enrichInBackground(obj, request) {
+  var healing = {};
+  function healMissingEnrichment(d) {
+    if (!d || !d.tripId || !d.aiItinerary || healing[d.tripId] || d.enrichedAt) return;
+    var hasHotels = ((d.aiItinerary || {}).hotel_recommendations || []).length > 0;
+    if (d.verification && hasHotels) return;
+    if (!me()) return;
+    healing[d.tripId] = true;
+    var pr = d.plannerProfile || {};
+    var request = { country: pr.country || d.country, region: pr.region || '', destination: pr.destination || pr.country || d.country, start_date: pr.start || (d.days[0] || {}).date, end_date: pr.end || (d.days[d.days.length - 1] || {}).date,
+      travelers: pr.people || 2, language: HE ? 'he' : 'en', trip_name: d.name, group: pr.group, transport: pr.transport, interests: pr.interests, must: pr.must, avoid: pr.avoid, notes: pr.free || '' };
+    toast(t('משלימים לטיול מלונות ובדיקה ברקע…', 'Adding hotels and verification in the background…'));
+    enrichInBackground(d, request, { skipVerify: !!d.verification, skipHotels: hasHotels });
+  }
+  function enrichInBackground(obj, request, opt) {
+    opt = opt || {};
     var sb = sbc(); if (!sb) return;
     var u = me(), base = { trip_id: obj.tripId, user_id: (u && u.id) || null, trip: request };
-    var verify = sb.functions.invoke(fnName(), { body: Object.assign({ action: 'verify_trip', itinerary: obj.aiItinerary }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
-    var hotels = sb.functions.invoke(fnName(), { body: Object.assign({ action: 'hotels', stays: staysFrom(obj.days) }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
+    var verify = opt.skipVerify ? Promise.resolve(null) : sb.functions.invoke(fnName(), { body: Object.assign({ action: 'verify_trip', itinerary: obj.aiItinerary }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
+    var hotels = opt.skipHotels ? Promise.resolve(null) : sb.functions.invoke(fnName(), { body: Object.assign({ action: 'hotels', stays: staysFrom(obj.days) }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
     Promise.all([verify, hotels]).then(function (res) {
-      var p = P(), target = p && p.draft && p.draft.tripId === obj.tripId ? p.draft : obj;
+      var p = P(), target = p && p.draft && p.draft.tripId === obj.tripId ? p.draft : (latestById[obj.tripId] || obj);
+      if (!res[0] || !res[1]) console.warn('V172 enrichment partial', obj.tripId, !!res[0], !!res[1]);
       if (res[0]) { target.verification = res[0].verification || null; target.aiUsage = Object.assign({}, target.aiUsage, { verify: res[0].usage || null, verifyCostUsd: res[0].cost_usd || 0 }); }
       if (res[1]) { target.aiItinerary = Object.assign({}, target.aiItinerary, { hotel_recommendations: res[1].hotel_recommendations || [] }); }
       target.buildStatus = 'verified-save';
+      if (res[0] || res[1]) target.enrichedAt = new Date().toISOString();
       if (res[0] || res[1]) saveDraftObject(target).then(function () { if (res[1] && (res[1].hotel_recommendations || []).length) toast(t('🏨 המלונות המומלצים נוספו לטיול', '🏨 Recommended hotels were added')); });
     });
   }
