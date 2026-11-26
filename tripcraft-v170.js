@@ -960,7 +960,7 @@
     var html = trips.length ? trips.map(function (p) {
       var dr = p.tripDraft || {}, days = (dr.days || []).length, url = tripUrl(p.tripId), country = (dr.plannerProfile || {}).country || dr.country || '';
       return '<article class="tc-trip-card"><div class="tc-trip-art">' + flag(countryIso(country) || 'UN') + '</div><div class="tc-trip-info"><h3>' + esc(p.tripName || dr.name || p.tripId) + '</h3>' +
-        '<div class="tc-muted">' + esc([country, p.destination].filter(function (v, i, a) { return v && a.indexOf(v) === i; }).join(' · ')) + (days ? ' · ' + days + ' ' + t('ימים', 'days') : '') + '</div>' +
+        '<div class="tc-muted">' + esc([countryIso(country) ? countryLabel(countryIso(country)) : country, p.destination === country ? '' : p.destination].filter(function (v, i, a) { return v && a.indexOf(v) === i; }).join(' · ')) + (days ? ' · ' + days + ' ' + t('ימים', 'days') : '') + '</div>' +
         '<div class="tc-trip-dates">' + fmt(p.start) + ' – ' + fmt(p.end) + (HE && p.start ? '<span class="tc-hebdate">' + esc(hebrewDate(p.start)) + '</span>' : '') + '</div></div>' +
         '<div class="tc-trip-actions"><button type="button" class="tc-btn tc-btn-primary" data-acc-open="' + esc(p.tripId) + '">' + t('פתח / ערוך', 'Open / edit') + '</button>' +
         '<button type="button" class="tc-btn tc-btn-soft" data-acc-copy="' + esc(url) + '">🔗 ' + t('העתק קישור', 'Copy link') + '</button>' +
