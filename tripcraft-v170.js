@@ -476,6 +476,7 @@
       comfortable_walking: selectText('plWalk'), max_daily_drive: selectText('plDrive'),
       interests: choiceLabels('interestChoices'), priorities: choiceLabels('tripPriorityChoices'), avoid: choiceLabels('avoidChoices'),
       must_see: String(d.must || '').split(/\s*,\s*/).filter(Boolean), constraints_free_text: d.free || '',
+      ai_notes: aiNotesValue(),
       lodging: {
         mode: label((document.querySelector('input[name=plLodgingMode]:checked') || {}).value || ''),
         types: choiceLabels('lodgingTypeChoices'), price_level: choiceLabels('lodgingBudgetChoices'), must_have: choiceLabels('lodgingFilterChoices'),
@@ -519,6 +520,7 @@
       'Every item in must_see must appear in the itinerary. Never include anything matching avoid.',
       'If flights are given: day 1 starts after arrival_time at arrival_airport (allow immigration + car pickup); the last day ends at departure_airport at least 3 hours before departure_time.',
       'Lodging: respect lodging.mode, types, price_level, hotel_stars and must_have. For each overnight area recommend exactly 3 real, currently operating hotels that match these filters.',
+      'ai_notes are the traveler\'s own notes, written in their words. They are BINDING: apply every single one of them in the plan. If one cannot be applied, say exactly why in important_notes.',
       'If a selection is impossible, keep the closest valid option and explain it in a note instead of silently ignoring it.'
     ];
   }
@@ -537,6 +539,7 @@
               body.trip.strict_instructions = strictInstructions(prof);
               body.trip.hotel_recommendations_per_area = 3;
               if (prof.must_see.length) body.trip.must = prof.must_see.join(', ');
+              if (prof.ai_notes) { body.trip.ai_notes = prof.ai_notes; body.trip.notes = [body.trip.notes, 'הערות הנוסע (מחייב): ' + prof.ai_notes].filter(Boolean).join('\n'); }
             }
           }
           if (body.action === 'build_trip') phase(4, null, 82);
@@ -816,7 +819,7 @@
   /* ================================================================
    * 10. New trip always starts clean (no leftovers from the previous trip)
    * ================================================================ */
-  function forgetWizardDraft() { try { localStorage.removeItem('tripcraft_planner_draft_v57'); } catch (e) {} }
+  function forgetWizardDraft() { try { localStorage.removeItem('tripcraft_planner_draft_v57'); localStorage.removeItem('tc_v170_ai_notes'); } catch (e) {} }
   var origSave = window.tcSaveCurrentTrip;
   if (typeof origSave === 'function' && !origSave.__v170) {
     window.tcSaveCurrentTrip = function () { return Promise.resolve(origSave.apply(this, arguments)).then(function (ok) { if (ok) forgetWizardDraft(); return ok; }); };
@@ -920,6 +923,79 @@
   });
 
   /* ================================================================
+   * 11b. Traveller notes for the AI - prominent at creation and when updating
+   * ================================================================ */
+  function aiNotesValue() { var el = $('tcAiNotes'); var v = el ? el.value.trim() : ''; if (!v) { var d = draft(); v = d && d.plannerProfile && d.plannerProfile.aiNotes || ''; } return String(v).slice(0, 3000); }
+  var NOTE_EXAMPLES = HE ? ['אנחנו לא אוכלים בשר', 'חשוב לנו לסיים כל יום עד 18:00', 'יש לנו ילד בן 4 — צריך מנוחת צהריים', 'רוצים לפחות יום אחד בלי נסיעות', 'מעדיפים מסעדות מקומיות ולא תיירותיות', 'יום הולדת ב-12/05 — ארוחת ערב מיוחדת']
+    : ['We don’t eat meat', 'We want to finish each day by 6pm', 'We have a 4-year-old — midday rest needed', 'At least one day without driving', 'Local restaurants, not touristy ones', 'Birthday on 12/05 — special dinner'];
+  function buildNotesCard() {
+    var step7 = document.querySelector('.planner-step[data-step="7"]'), sum = $('plannerSummary');
+    if (!step7 || !sum || $('tcAiNotesCard')) return;
+    var card = document.createElement('section');
+    card.id = 'tcAiNotesCard'; card.className = 'tc-notes-card';
+    card.innerHTML = '<div class="tc-notes-head"><span class="tc-notes-icon">📝</span><div><h3>' + t('הערות ל-AI — כל מה שחשוב לכם', 'Notes for the AI — everything that matters to you') + '</h3><p>' +
+      t('כתבו כאן במילים שלכם: הרגלים, בקשות מיוחדות, אירועים, אוכל, קצב, מה לא לעשות. ה-AI מתכנן לפי ההערות האלה כהנחיות מחייבות.', 'Write in your own words: habits, special requests, events, food, pace, what to avoid. The AI treats these notes as binding instructions.') + '</p></div></div>' +
+      '<textarea id="tcAiNotes" rows="6" maxlength="3000" placeholder="' + esc(t('למשל: אנחנו קמים מאוחר, לא אוהבים מוזיאונים, רוצים ערב רומנטי אחד ושקיעה מנקודת תצפית…', 'e.g. We wake up late, don’t like museums, want one romantic evening and a sunset viewpoint…')) + '"></textarea>' +
+      '<div class="tc-notes-examples"><small>' + t('רעיונות — לחצו כדי להוסיף:', 'Ideas — tap to add:') + '</small>' + NOTE_EXAMPLES.map(function (x) { return '<button type="button" class="tc-chip-btn">' + esc(x) + '</button>'; }).join('') + '</div>' +
+      '<div class="tc-notes-count"><span id="tcAiNotesCount">0</span>/3000</div>';
+    step7.insertBefore(card, sum);
+    var ta = $('tcAiNotes'), cnt = $('tcAiNotesCount');
+    try { ta.value = localStorage.getItem('tc_v170_ai_notes') || ''; } catch (e) {}
+    function sync() { cnt.textContent = ta.value.length; try { localStorage.setItem('tc_v170_ai_notes', ta.value); } catch (e) {} }
+    ta.addEventListener('input', sync); sync();
+    card.querySelectorAll('.tc-chip-btn').forEach(function (b) { b.addEventListener('click', function () { ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + b.textContent; sync(); ta.focus(); }); });
+    var s1 = document.querySelector('.planner-step[data-step="1"] .step1-subnav');
+    if (s1 && !$('tcNotesTeaser')) s1.insertAdjacentHTML('afterend', '<div id="tcNotesTeaser" class="tc-context">📝 ' + t('בסוף האשף יש מקום להערות חופשיות ל-AI — שם כותבים כל מה שחשוב לכם.', 'At the end of the wizard there is room for your own notes to the AI.') + '</div>');
+  }
+  function notesForDraft() {
+    var d = draft(); if (!d) return;
+    d.plannerProfile = d.plannerProfile || {};
+    var v = ($('tcAiNotes') || {}).value; v = v ? v.trim() : '';
+    if (v && !d.plannerProfile.aiNotes) d.plannerProfile.aiNotes = v;
+  }
+  function buildNotesUpdateCard() {
+    var d = draft(), res = $('plannerResult'); if (!d || !res) return;
+    var card = $('tcNotesUpdate');
+    if (!card) {
+      card = document.createElement('section'); card.id = 'tcNotesUpdate'; card.className = 'tc-notes-card tc-notes-update';
+      var head = res.querySelector('.planner-result-head'); head ? head.insertAdjacentElement('afterend', card) : res.prepend(card);
+    }
+    var notes = (d.plannerProfile || {}).aiNotes || '', hist = (d.changeLog || []).filter(function (c) { return c.scope === 'trip' || c.scope === 'notes'; }).slice(-3);
+    var left = Math.max(0, (d.maxChanges || 5) - (d.changeCount || 0));
+    card.innerHTML = '<div class="tc-notes-head"><span class="tc-notes-icon">📝</span><div><h3>' + t('הערות ועדכונים לטיול', 'Notes & updates for this trip') + '</h3><p>' +
+      t('כתבו מה לשנות או מה עוד חשוב לכם — ה-AI יעדכן את כל הטיול לפי ההערות.', 'Write what to change or what else matters — the AI updates the whole trip accordingly.') + '</p></div></div>' +
+      (notes ? '<div class="tc-notes-saved"><b>' + t('ההערות שלכם שה-AI כבר קיבל:', 'Notes the AI already has:') + '</b><div>' + esc(notes).replace(/\n/g, '<br>') + '</div></div>' : '') +
+      (hist.length ? '<div class="tc-notes-hist">' + hist.map(function (h) { return '<div>✓ ' + esc(h.text) + '</div>'; }).join('') + '</div>' : '') +
+      '<textarea id="tcNotesUpdateText" rows="4" maxlength="2000" placeholder="' + esc(t('למשל: להוסיף יום רגוע באמצע, להחליף את המסעדה ביום 3 במשהו צמחוני, לסיים את יום 2 מוקדם יותר…', 'e.g. add a relaxed day in the middle, make day 3 dinner vegetarian, finish day 2 earlier…')) + '"></textarea>' +
+      '<div class="tc-notes-actions"><span class="tc-muted">' + t('נותרו ' + left + ' עדכוני AI לטיול', left + ' AI updates left') + '</span><button type="button" class="tc-btn tc-btn-primary" id="tcNotesUpdateBtn"' + (left ? '' : ' disabled') + '>✨ ' + t('עדכן את הטיול לפי ההערות', 'Update the trip from these notes') + '</button></div>';
+    $('tcNotesUpdateBtn').addEventListener('click', function () {
+      var txt = ($('tcNotesUpdateText').value || '').trim();
+      if (txt.length < 3) { toast(t('כתבו קודם מה לעדכן', 'Write what to update first'), 'error'); return; }
+      var input = $('plannerChatInput'), send = $('plannerChatSend');
+      if (!input || !send) { toast(t('העדכון לא זמין כרגע', 'Updates are unavailable right now'), 'error'); return; }
+      var dd = draft(); dd.plannerProfile = dd.plannerProfile || {};
+      dd.plannerProfile.aiNotes = [dd.plannerProfile.aiNotes, txt].filter(Boolean).join('\n');
+      input.value = (HE ? 'עדכון לפי הערות הנוסע (לכל הטיול): ' : 'Update from traveller notes (whole trip): ') + txt;
+      send.click();
+      $('tcNotesUpdateText').value = '';
+      toast(t('ה-AI מעדכן את הטיול… זה יכול לקחת עד דקה–שתיים', 'The AI is updating your trip… this may take a minute or two'));
+      var log = $('plannerChatLog'); log && log.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
+  // keep notes with the trip when it is saved, and refresh the update card after each render
+  var saveWithNotes = window.tcSaveCurrentTrip;
+  if (typeof saveWithNotes === 'function' && !saveWithNotes.__notes) {
+    window.tcSaveCurrentTrip = function () { try { notesForDraft(); } catch (e) {} return saveWithNotes.apply(this, arguments); };
+    window.tcSaveCurrentTrip.__notes = true; window.tcSaveCurrentTrip.__v170 = true;
+    try { tcSaveCurrentTrip = window.tcSaveCurrentTrip; } catch (e) {}
+  }
+  var renderWithNotes = window.renderPlannerDraft;
+  window.renderPlannerDraft = function () { try { notesForDraft(); } catch (e) {} var r = renderWithNotes.apply(this, arguments); try { buildNotesUpdateCard(); } catch (e) { console.warn('notes card', e); } return r; };
+  try { renderPlannerDraft = window.renderPlannerDraft; } catch (e) {}
+  var cleanWithNotes = window.tcStartCleanTrip;
+  window.tcStartCleanTrip = function () { try { localStorage.removeItem('tc_v170_ai_notes'); } catch (e) {} var ta = $('tcAiNotes'); if (ta) { ta.value = ''; ta.dispatchEvent(new Event('input')); } return cleanWithNotes.apply(this, arguments); };
+
+  /* ================================================================
    * 12. Boot
    * ================================================================ */
   function relabelCountryChips() {
@@ -931,7 +1007,7 @@
     });
   }
   function boot() {
-    relabelCountryChips(); observeAccount();
+    relabelCountryChips(); observeAccount(); buildNotesCard();
     document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1[0-6]\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1[0-6]\d/, 'V170'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });

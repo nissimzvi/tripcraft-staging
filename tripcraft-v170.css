@@ -160,7 +160,7 @@ body.tc-modal-open{overflow:hidden}
 .tc-stop.tc-geo-none [data-tc-nav]{display:none}
 .tc-stop.tc-geo-ok .tc-btn-waze::after{content:" ✓";font-weight:800}
 .tc-empty{padding:18px;text-align:center;color:var(--tc-muted);background:#fafbfc;border:1px dashed var(--tc-line);border-radius:16px}
-.tc-v170-day .day-chat{position:sticky;bottom:0;z-index:2;margin:16px 0 0!important;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--tc-line);backdrop-filter:blur(10px)}
+.tc-v170-day .day-chat{position:static;margin:16px 0 0!important;padding:12px 20px calc(12px + env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--tc-line);backdrop-filter:blur(10px)}
 .tc-v170-day .chatlog{max-height:180px;overflow:auto}
 .tc-v170-day .chatinput{display:flex;gap:8px}
 .tc-v170-day .chatinput input{flex:1;min-width:0}
@@ -200,7 +200,6 @@ body.tc-dialog-open{overflow:hidden}
 @media (max-width:700px){
   .panel,.planner-step{border-radius:18px!important}
   .tc-btn,.btn{min-height:48px;font-size:15.5px}
-  .planner-actions{position:sticky;bottom:calc(64px + env(safe-area-inset-bottom));z-index:5;background:rgba(245,247,248,.94);backdrop-filter:blur(8px);padding:10px 0;margin-inline:-4px}
   .planner-actions .btn{flex:1 1 0}
   .step1-subnav span{font-size:13px;padding:9px 4px}
   .tc-v170-day.planner-modal{padding:0!important;align-items:stretch!important}
@@ -234,3 +233,29 @@ body.tc-dialog-open{overflow:hidden}
   .step1-subnav{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- V170: no floating action buttons - actions sit at the end of each page ---------- */
+.planner-actions,.tc-v170-day .day-chat,.trip-actions,.tc-home-actions{position:static!important;bottom:auto!important;box-shadow:none}
+.planner-actions{display:flex;gap:10px;margin:22px 0 calc(90px + env(safe-area-inset-bottom));padding:16px 0 0;border-top:1px solid var(--tc-line)}
+.planner-actions .btn{flex:1 1 0;min-height:52px}
+@media (max-width:700px){.planner-actions{flex-direction:row-reverse}}
+
+/* ---------- V170: notes for the AI ---------- */
+.tc-notes-card{margin:4px 0 18px;padding:20px;border-radius:var(--tc-radius);background:linear-gradient(180deg,#fff8f3,#fff);border:2px solid #ffd7c4;box-shadow:var(--tc-shadow)}
+.tc-notes-head{display:flex;gap:14px;align-items:flex-start;margin-bottom:12px}
+.tc-notes-icon{flex:0 0 48px;height:48px;border-radius:14px;background:var(--tc-accent);display:grid;place-items:center;font-size:24px}
+.tc-notes-head h3{margin:0 0 4px;font-size:20px}
+.tc-notes-head p{margin:0;color:var(--tc-ink-2);line-height:1.6}
+.tc-notes-card textarea{width:100%;box-sizing:border-box;min-height:140px;border:1.5px solid #f2c3ad;border-radius:16px;padding:14px 16px;font:inherit;line-height:1.7;background:#fff;resize:vertical}
+.tc-notes-card textarea:focus{outline:none;border-color:var(--tc-accent);box-shadow:0 0 0 4px rgba(242,107,58,.15)}
+.tc-notes-examples{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;align-items:center}
+.tc-notes-examples small{color:var(--tc-muted);width:100%}
+.tc-chip-btn{border:1px dashed #e9a888;background:#fff;color:#8a3b18;border-radius:999px;padding:7px 12px;font:600 13.5px/1.2 inherit;cursor:pointer}
+.tc-chip-btn:hover{background:var(--tc-accent-soft)}
+.tc-notes-count{text-align:end;color:var(--tc-muted);font-size:12px;margin-top:6px}
+.tc-notes-saved{background:#fff;border:1px solid var(--tc-line);border-radius:14px;padding:12px 14px;margin-bottom:10px;line-height:1.7}
+.tc-notes-saved b{display:block;margin-bottom:4px;color:var(--tc-ink-2)}
+.tc-notes-hist{font-size:13.5px;color:var(--tc-brand-2);margin-bottom:10px;display:grid;gap:4px}
+.tc-notes-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:12px}
+.tc-notes-actions .tc-btn{flex:0 1 auto;min-height:50px;padding-inline:22px}
+@media (max-width:700px){.tc-notes-card{padding:16px}.tc-notes-actions .tc-btn{flex:1 1 100%}.tc-notes-head h3{font-size:18px}}
