@@ -73,7 +73,7 @@
     [t('מה ה-AI לא עושה?', 'What does the AI not do?'), t('הוא לא מזמין בשבילכם כרטיסים או מלונות, ולא יודע אם מקום נסגר אתמול או שינה שעות. לכן לפני שטסים – בדקו שעות פתיחה והזמינו את מה שמסומן "להזמין מראש".', 'It does not book tickets or hotels for you, and it cannot know if a place closed yesterday or changed its hours. Before you fly, check opening hours and book everything marked "Book ahead".')],
     [t('אפשר לשנות את המסלול?', 'Can I change the plan?'), t('כן. כותבים לעוזר בשפה חופשית ("להחליף את יום 3 ביום חוף", "פחות נסיעות") והוא משנה רק את מה שביקשתם. אפשר גם לערוך כל תחנה בעצמכם.', 'Yes. Tell the assistant in plain words ("make day 3 a beach day", "less driving") and it changes only what you asked. You can also edit any stop yourself.')],
     [t('זה עובד גם לטיול בארץ?', 'Does it work for trips in Israel?'), t('כן. בטיול בארץ אין שלב טיסות, והמסלול מתחיל מהבית.', 'Yes. Trips in Israel skip the flights step and start from home.')],
-    [t('איך משתפים את הטיול?', 'How do I share a trip?'), t('מ"החשבון שלי" או מעמוד הטיול: כפתור ווטסאפ או העתקת קישור.', 'From My account or the trip page: WhatsApp button or copy link.')]
+    [t('איך משתפים את הטיול?', 'How do I share a trip?'), t('מ"החשבון שלי" או מעמוד הטיול: "העתק קישור" ושולחים למי שנוסע איתכם.', 'From My account or the trip page: "Copy link" and send it to your travel mates.')]
   ];
   function faqSection() {
     return '<div class="tc-home-section tcn-faq" id="tcnFaq"><div class="tc-home-section-head"><span>' + t('שאלות נפוצות', 'FAQ') + '</span><h2>' + t('בלי אותיות קטנות', 'No small print') + '</h2></div><div class="tcn-faq-list">' +
@@ -134,16 +134,6 @@
   /* ---------- 4. 30 minutes without activity = sign out ---------- */
   // index.html uses TC_AUTH_MAX_IDLE = 30 min; activity (click/typing/scroll/touch) keeps the session alive (tripcraft-v170 touchAuth).
 
-  /* ---------- 5. Share a trip on WhatsApp ---------- */
-  function waUrl(link, name) { return 'https://wa.me/?text=' + encodeURIComponent((name ? name + ' – ' : '') + t('הטיול שלי ב-TripCraft: ', 'My TripCraft trip: ') + link); }
-  function addAccountWhatsapp() {
-    [].forEach.call(document.querySelectorAll('[data-acc-copy]'), function (b) {
-      if (b.parentNode.querySelector('.tcn-wa')) return;
-      var card = b.closest('.tc-trip-card'), name = card && card.querySelector('h3') ? card.querySelector('h3').textContent : '';
-      b.insertAdjacentHTML('beforebegin', '<a class="tc-btn tcn-wa" target="_blank" rel="noopener" href="' + esc(waUrl(b.getAttribute('data-acc-copy'), name)) + '">' + t('ווטסאפ', 'WhatsApp') + '</a>');
-    });
-  }
-
   /* ---------- 6. Book ahead: box on the trip page ---------- */
   var BOOK_RE = /^\s*(?:🎟\s*)?(?:להזמין מראש|הזמנה מראש|book ahead|book in advance)\s*[:：\-–]\s*/i;
   function bookAheadItems(d) {
@@ -171,7 +161,7 @@
       var base = (window.TRIPCRAFT_CONFIG && window.TRIPCRAFT_CONFIG.publicBaseUrl) || (location.origin + location.pathname);
       var link = base.replace(/[?#].*$/, '') + '#trip/' + encodeURIComponent(d.tripId);
       if (!share) { share = document.createElement('div'); share.id = 'tcnShare'; share.className = 'tcn-share'; (box || anchor).insertAdjacentElement('beforebegin', share); }
-      share.innerHTML = '<span>' + t('שתפו את הטיול עם מי שנוסע איתכם:', 'Share the trip with your travel mates:') + '</span><a class="tc-btn tcn-wa" target="_blank" rel="noopener" href="' + esc(waUrl(link, d.name)) + '">' + t('שלחו בווטסאפ', 'Send on WhatsApp') + '</a><button type="button" class="tc-btn tc-btn-soft" data-tcn-copy="' + esc(link) + '">🔗 ' + t('העתק קישור', 'Copy link') + '</button>';
+      share.innerHTML = '<span>' + t('שתפו את הטיול עם מי שנוסע איתכם:', 'Share the trip with your travel mates:') + '</span><button type="button" class="tc-btn tc-btn-soft" data-tcn-copy="' + esc(link) + '">🔗 ' + t('העתק קישור', 'Copy link') + '</button>';
     } else if (share) share.remove();
   }
   document.addEventListener('click', function (e) {
@@ -180,17 +170,42 @@
     (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { window.tcToast && window.tcToast(t('✓ הקישור הועתק', '✓ Link copied')); }, function () { window.prompt(t('העתיקו את הקישור:', 'Copy the link:'), v); });
   });
 
+  /* ---------- 7. Logo = home page, always ---------- */
+  window.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.tc-logo-link, [data-tc-home-logo]'); if (!a) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    try { var m = $('plannerDayModal'); if (m && m.open && m.close) m.close(); } catch (x) {}
+    try { window.tcMenu && window.tcMenu(false); } catch (x) {}
+    if (location.hash !== '#home') location.hash = '#home'; else { try { window.applyPageFocus && window.applyPageFocus(); } catch (x) {} }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, true);
+
+  /* ---------- 8. One-time code: paste always gives all 6 digits ---------- */
+  function otpField() { return $('tcOtpCode'); }
+  document.addEventListener('paste', function (e) {
+    var f = otpField(); if (!f || e.target !== f) return;
+    var txt = ((e.clipboardData || window.clipboardData) || { getData: function () { return ''; } }).getData('text') || '';
+    var digits = txt.replace(/\D/g, '').slice(0, 6);
+    if (!digits) return;
+    e.preventDefault();
+    f.value = digits; f.dispatchEvent(new Event('input', { bubbles: true }));
+  }, true);
+  document.addEventListener('input', function (e) {
+    var f = otpField(); if (!f || e.target !== f) return;
+    var clean = f.value.replace(/\D/g, '').slice(0, 6); if (clean !== f.value) f.value = clean;
+  }, true);
+  function fixOtpField() { var f = otpField(); if (f && f.getAttribute('maxlength') !== '12') { f.setAttribute('maxlength', '12'); } }
+
   /* ---------- boot ---------- */
   function wrapRender() {
     var orig = window.renderPlannerDraft; if (typeof orig !== 'function' || orig.__tcn) return;
     var w = function () { var r = orig.apply(this, arguments); try { renderTripExtras(); } catch (e) { console.warn('TCN extras', e); } return r; };
     w.__tcn = true; window.renderPlannerDraft = w; try { renderPlannerDraft = w; } catch (e) {}
   }
-  function tick() { setupHome(); guestBuildNote(); syncGuestNote(); resumeBuildAfterLogin(); if (location.hash === '#account') addAccountWhatsapp(); }
+  function tick() { setupHome(); guestBuildNote(); syncGuestNote(); resumeBuildAfterLogin(); fixOtpField(); }
   function boot() {
     wrapRender(); tick();
     window.addEventListener('hashchange', function () { setTimeout(tick, 120); setTimeout(tick, 900); });
-    new MutationObserver(function () { if (location.hash === '#account') addAccountWhatsapp(); }).observe(document.body, { childList: true, subtree: true });
     setInterval(syncGuestNote, 2000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
