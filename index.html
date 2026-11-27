@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="tripcraft-v160.css?v=160">
-<link rel="stylesheet" href="tripcraft-v170.css?v=183">
+<link rel="stylesheet" href="tripcraft-v170.css?v=184">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
@@ -973,7 +973,7 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
  window.tcAddTripToCart=function(sku,title,price){const c=jget(K.cart,[]);c.push({id:Date.now()+Math.random(),sku,title,price,kind:'trip'});jset(K.cart,c);tcUpdateCart();location.hash='#cart';};
  window.tcRemoveCart=function(id){jset(K.cart,jget(K.cart,[]).filter(x=>String(x.id)!==String(id)));tcUpdateCart();tcRenderCart();};
  function tcUpdateCart(){const n=jget(K.cart,[]).length;['tcCartBadge','tcCartBadgeMobile'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=n;});}
- const TC_AUTH_OK='tc_v142_auth_ok',TC_AUTH_LAST='tc_v142_last_activity',TC_AUTH_MAX_IDLE=30*60*1000;
+ const TC_AUTH_OK='tc_v142_auth_ok',TC_AUTH_LAST='tc_v142_last_activity',TC_AUTH_MAX_IDLE=30*24*60*60*1000;
  function tcSetSessionFlag(){try{sessionStorage.setItem(TC_AUTH_OK,'1');}catch(e){}}
  function tcMarkAuthenticated(){const now=Date.now();tcSetSessionFlag();try{localStorage.setItem(TC_AUTH_LAST,String(now));}catch(e){}}
  function tcClearAuthenticated(){try{sessionStorage.removeItem(TC_AUTH_OK);}catch(e){}try{localStorage.removeItem(TC_AUTH_LAST);}catch(e){}localStorage.removeItem(K.customer);}
@@ -1131,7 +1131,7 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 </script>
 
 
-<script src="tripcraft-data.js?v=183"></script>
+<script src="tripcraft-data.js?v=184"></script>
 <script id="tc-v57-ux">
 (function(){
  const countries=(window.TC_COUNTRIES_FULL&&window.TC_COUNTRIES_FULL.length)?window.TC_COUNTRIES_FULL.map(c=>c[1]):['אוסטריה','גרמניה','איטליה','צרפת','שווייץ','יוון','הונגריה','סלובקיה','ויאטנם','תאילנד','ספרד','פורטוגל','הולנד','בלגיה','צ׳כיה','פולין','קרואטיה','סלובניה','רומניה','בולגריה','קפריסין','טורקיה','בריטניה','אירלנד','דנמרק','נורווגיה','שוודיה','פינלנד','איסלנד','ארה״ב','קנדה','יפן','דרום קוריאה','סינגפור','איחוד האמירויות','גאורגיה','מונטנגרו','אלבניה','מלטה'];
@@ -1367,10 +1367,10 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
  window.tcStartCleanTrip=function(){if(!currentUser()){try{sessionStorage.setItem('tc_return_after_login','#account');}catch(_e){}location.hash='#login';return;}return originalStart?.();};
  // If an old customer object exists without a real auth session it must never bypass the email screen.
  const sb=window.tcSupabase?.();
- if(sb?.auth?.getSession){sb.auth.getSession().then(async({data})=>{const hasUser=!!data?.session?.user;let last=0;try{last=Number(localStorage.getItem('tc_v142_last_activity')||0)||0;}catch(e){}const expired=!last||Date.now()-last>30*60*1000;if(!hasUser||expired){if(hasUser&&expired){try{await sb.auth.signOut();}catch(_e){}}try{sessionStorage.removeItem('tc_v142_auth_ok');sessionStorage.removeItem('tc_v141_auth_ok');sessionStorage.removeItem('tc_v141_auth_touch');localStorage.removeItem('tc_v142_last_activity');localStorage.removeItem('tc_v433_customer');}catch(e){}if(['#planner','#account','#trips','#hotels','#import','#cart'].includes(location.hash)){location.hash='#login';}}}).catch(()=>{});}
+ if(sb?.auth?.getSession){sb.auth.getSession().then(async({data})=>{const hasUser=!!data?.session?.user;let last=0;try{last=Number(localStorage.getItem('tc_v142_last_activity')||0)||0;}catch(e){}const expired=!last||Date.now()-last>30*24*60*60*1000;if(!hasUser||expired){if(hasUser&&expired){try{await sb.auth.signOut();}catch(_e){}}try{sessionStorage.removeItem('tc_v142_auth_ok');sessionStorage.removeItem('tc_v141_auth_ok');sessionStorage.removeItem('tc_v141_auth_touch');localStorage.removeItem('tc_v142_last_activity');localStorage.removeItem('tc_v433_customer');}catch(e){}if(['#planner','#account','#trips','#hotels','#import','#cart'].includes(location.hash)){location.hash='#login';}}}).catch(()=>{});}
  // Keep the visible version trustworthy.
  document.querySelectorAll('.brand small').forEach(el=>{if(/V\d+/.test(el.textContent))el.textContent=el.textContent.replace(/V\d+/,'V163');});
- async function tcV163CheckIdleOnResume(){let last=0;try{last=Number(localStorage.getItem('tc_v142_last_activity')||0)||0;}catch(e){}if(!last||Date.now()-last<=30*60*1000)return;const s=window.tcSupabase?.();try{await s?.auth?.signOut();}catch(_e){}try{sessionStorage.removeItem('tc_v142_auth_ok');localStorage.removeItem('tc_v142_last_activity');localStorage.removeItem('tc_v433_customer');}catch(_e){}if(['#planner','#account','#trips','#hotels','#import','#cart'].includes(location.hash))location.hash='#login';try{window.tcRouteRefresh?.('account');}catch(_e){}}
+ async function tcV163CheckIdleOnResume(){let last=0;try{last=Number(localStorage.getItem('tc_v142_last_activity')||0)||0;}catch(e){}if(!last||Date.now()-last<=30*24*60*60*1000)return;const s=window.tcSupabase?.();try{await s?.auth?.signOut();}catch(_e){}try{sessionStorage.removeItem('tc_v142_auth_ok');localStorage.removeItem('tc_v142_last_activity');localStorage.removeItem('tc_v433_customer');}catch(_e){}if(['#planner','#account','#trips','#hotels','#import','#cart'].includes(location.hash))location.hash='#login';try{window.tcRouteRefresh?.('account');}catch(_e){}}
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')tcV163CheckIdleOnResume();});
  window.addEventListener('focus',tcV163CheckIdleOnResume);
  window.TripCraftV163QA={version:VERSION,requiresEmail:true,accountAfterOtp:true,autoSave:true,accountEditDelete:true};
@@ -1435,7 +1435,7 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 <label for="tcNavToggle"><span class="ico" aria-hidden="true">☰</span><span data-he="עוד" data-en="More">עוד</span></label>
 </nav>
 <!-- V170: review before production deployment -->
-<script src="tripcraft-v160.js?v=183"></script>
-<script src="tripcraft-v170.js?v=183"></script>
+<script src="tripcraft-v160.js?v=184"></script>
+<script src="tripcraft-v170.js?v=184"></script>
 <script src="tripcraft-analytics.js?v=160"></script>
 </body></html>
