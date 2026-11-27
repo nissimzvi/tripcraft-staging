@@ -1255,7 +1255,9 @@
     if (!opt.skipHotels) hotelState[obj.tripId] = 'loading';
     var sb = sbc(); if (!sb) return;
     var u = me(), base = { trip_id: obj.tripId, user_id: (u && u.id) || null, trip: request };
-    var verify = opt.skipVerify ? Promise.resolve(null) : sb.functions.invoke(fnName(), { body: Object.assign({ action: 'verify_trip', itinerary: obj.aiItinerary }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
+    function verifyOnce() { return sb.functions.invoke(fnName(), { body: Object.assign({ action: 'verify_trip', itinerary: obj.aiItinerary }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; }); }
+    // a long web check can fail once when it runs next to the hotels call – try again after a short pause
+    var verify = opt.skipVerify ? Promise.resolve(null) : verifyOnce().then(function (v) { return v || new Promise(function (r) { setTimeout(r, 4000); }).then(verifyOnce); });
     var hotels = opt.skipHotels ? Promise.resolve(null) : sb.functions.invoke(fnName(), { body: Object.assign({ action: 'hotels', stays: staysFrom(obj.days) }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
     Promise.all([verify, hotels]).then(function (res) {
       var p = P(), target = p && p.draft && p.draft.tripId === obj.tripId ? p.draft : (latestById[obj.tripId] || obj);
