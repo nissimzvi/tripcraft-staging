@@ -279,7 +279,7 @@ body.tc-dialog-open{overflow:hidden}
 .tc-trip-pending .tc-btn[disabled]{background:#e9eef0!important;color:#9aa8af!important;border-color:#e2e8eb!important;box-shadow:none!important;cursor:not-allowed}
 .tc-build-progress{position:relative;margin-top:10px;height:22px;border-radius:999px;background:#f3dfe3;overflow:hidden}
 .tc-build-progress i{position:absolute;inset-block:0;inset-inline-start:0;background:linear-gradient(90deg,#6d1426,#a3213d);border-radius:999px;transition:width 1s linear}
-.tc-build-progress span{position:relative;z-index:1;display:block;text-align:center;font:800 13px/22px inherit;color:#4a0d1a;text-shadow:0 0 6px #fff,0 0 2px #fff}
+.tc-build-progress span{position:relative;z-index:1;display:block;text-align:center;font-weight:800;font-size:13px;line-height:22px;color:#fff;text-shadow:0 0 2px #3b0a15,0 0 4px #3b0a15,0 1px 2px #3b0a15}
 .tc-trip-failed{border-color:#c2362b}
 .tc-trip-failed .tc-build-progress i{background:#c2362b}
 
