@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=191'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=192'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -1360,10 +1360,12 @@
     saveJob(job);
     function skeletonOnce() { return invokeTimed({ action: 'trip_skeleton', trip_id: tripId, user_id: u.id || null, trip: JSON.parse(JSON.stringify(request)) }, 60000).then(function (r) { var d = r && r.data; return d && d.ok && d.days && d.days.length ? d.days : null; }).catch(function () { return null; }); }
     var planP = nDays > PART_DAYS ? skeletonOnce().then(function (sk) { return sk || skeletonOnce(); }) : Promise.resolve(null);
-    return planP.then(function (skeleton) {
+    // the trip card (with progress) appears in My account right away; plan + parts run in the background
+    planP.then(function (skeleton) {
       job.parts = skeleton ? partRequests(request, skeleton) : [{ req: request, state: 'queued', tries: 0 }]; job.skeleton = skeleton || null;
       return Promise.all(job.parts.map(function (_, i) { return queuePart(job, i); }));
-    }).then(function () { saveJob(job); pollGroup(job); return job; }, function (e) { jobRemove(job.id); throw e; });
+    }).then(function () { saveJob(job); pollGroup(job); }, function (e) { saveJob(job); fail(job, e && e.message); });
+    return Promise.resolve(job);
   }
   function mergeParts(results, skeleton) {
     var first = results[0], last = results[results.length - 1], days = [];
