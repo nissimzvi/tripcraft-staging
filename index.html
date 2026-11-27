@@ -10,11 +10,11 @@
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
 <title>TripCraft | תכנון טיול אישי, מסלולים ומדריכי יעדים</title>
-<script>if(new URLSearchParams(location.search).get('lang')==='en'||/index-en\.html$/i.test(location.pathname)){localStorage.setItem('tc_v433_lang','en');document.documentElement.lang='en';document.documentElement.dir='ltr';}</script>
+<script>(function(){try{var q=new URLSearchParams(location.search);if(q.get('lang')==='he'){localStorage.setItem('tc_v433_lang','he');return;}if(q.get('lang')==='en'||localStorage.getItem('tc_v433_lang')==='en'){localStorage.setItem('tc_v433_lang','en');q.delete('lang');var s=q.toString();location.replace(new URL('index-en.html',location.href).pathname+(s?'?'+s:'')+location.hash);}}catch(e){}})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="tripcraft-v160.css?v=160">
-<link rel="stylesheet" href="tripcraft-v170.css?v=182">
+<link rel="stylesheet" href="tripcraft-v170.css?v=183">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
@@ -319,8 +319,35 @@
 </section>
 
 <section id="legal" class="panel tc-commerce-page">
- <div class="page-visual legal-visual"><div><h2 data-he="פרטיות, תקנון ונגישות" data-en="Privacy, Terms & Accessibility">פרטיות, תקנון ונגישות</h2><p data-he="נוסחי עבודה לגרסת הפיתוח. לפני השקה מסחרית יועברו לבדיקה משפטית." data-en="Draft texts for development. Final versions will be reviewed legally before commercial launch.">נוסחי עבודה לגרסת הפיתוח. לפני השקה מסחרית יועברו לבדיקה משפטית.</p></div></div>
- <div class="legal-grid"><article><h3 data-he="פרטיות ומידע" data-en="Privacy & Data">פרטיות ומידע</h3><p data-he="נשמור רק שם פרטי, שם משפחה, טלפון, אימייל, Trip ID, רכישות ונתוני שימוש הדרושים לשירות. אין לשמור מספר כרטיס מלא, CVV, דרכון או תעודת זהות." data-en="We store only first name, last name, phone, email, Trip ID, purchases and service usage data. Full card numbers, CVV, passport or national ID are not stored.">נשמור רק שם פרטי, שם משפחה, טלפון, אימייל, Trip ID, רכישות ונתוני שימוש הדרושים לשירות. אין לשמור מספר כרטיס מלא, CVV, דרכון או תעודת זהות.</p></article><article><h3 data-he="אבטחה" data-en="Security">אבטחה</h3><p data-he="בפרודקשן אימות OTP, הרשאות, נתוני לקוחות, תשלומים ומפתחות API יטופלו בשרת מאובטח בלבד. GitHub Pages ישמש Frontend ציבורי בלבד." data-en="In production, OTP, permissions, customer data, payments and API keys will be handled only by a secure backend. GitHub Pages will serve public frontend assets only.">בפרודקשן אימות OTP, הרשאות, נתוני לקוחות, תשלומים ומפתחות API יטופלו בשרת מאובטח בלבד. GitHub Pages ישמש Frontend ציבורי בלבד.</p></article><article><h3 data-he="נגישות" data-en="Accessibility">נגישות</h3><p data-he="הממשק כולל ניווט מקלדת, ניגודיות, הגדלת טקסט, טקסט חלופי, RTL/LTR ותפריט נגיש במובייל. לפני השקה תבוצע בדיקת נגישות מלאה." data-en="The interface supports keyboard navigation, contrast, larger text, alternative text, RTL/LTR and an accessible mobile menu. A full accessibility review will be completed before launch.">הממשק כולל ניווט מקלדת, ניגודיות, הגדלת טקסט, טקסט חלופי, RTL/LTR ותפריט נגיש במובייל. לפני השקה תבוצע בדיקת נגישות מלאה.</p></article><article><h3 data-he="תנאי שימוש וביטולים" data-en="Terms & Cancellations">תנאי שימוש וביטולים</h3><p data-he="כל רכישה היא עבור Trip ID אחד. שינוי יעד מהותי ייחשב טיול חדש. תנאי הביטול, ההחזרים ו-Affiliate יוגדרו בתקנון הסופי." data-en="Each purchase is for one Trip ID. A material destination change is treated as a new trip. Cancellation, refund and affiliate terms will be defined in the final terms.">כל רכישה היא עבור Trip ID אחד. שינוי יעד מהותי ייחשב טיול חדש. תנאי הביטול, ההחזרים ו-Affiliate יוגדרו בתקנון הסופי.</p></article></div>
+ <div class="page-visual legal-visual"><div><h2>פרטיות, תקנון ונגישות</h2><p>תנאי השימוש, מדיניות הפרטיות והצהרת הנגישות של TripCraft. עודכן לאחרונה: 27 בנובמבר 2026.</p></div></div>
+ <div class="tc-legal">
+ <nav class="tc-legal-toc" aria-label="תוכן העמוד"><a href="#tc-terms">תקנון ותנאי שימוש</a><a href="#tc-privacy">מדיניות פרטיות</a><a href="#tc-access">הצהרת נגישות</a></nav>
+ <article id="tc-terms"><h3>תקנון ותנאי שימוש</h3>
+ <h4>1. כללי</h4><p>TripCraft (להלן: "האתר" או "השירות") הוא כלי לתכנון טיולים בעזרת בינה מלאכותית. השימוש באתר מהווה הסכמה לתנאים אלה. התנאים מנוסחים בלשון זכר לנוחות בלבד ומתייחסים לכל המגדרים.</p>
+ <h4>2. השירות</h4><p>האתר בונה עבורך מסלול טיול לפי הנתונים וההעדפות שהזנת, כולל המלצות על אטרקציות, מסעדות ולינה, וקישורי ניווט (Waze, Google Maps). כרגע השירות ניתן ללא תשלום. אנו רשאים לשנות, להוסיף או להפסיק תכונות, וכן להכניס בעתיד מסלולים בתשלום — תוך הודעה מראש באתר.</p>
+ <h4>3. תוכן שנוצר בבינה מלאכותית</h4><p>המסלולים נוצרים באופן אוטומטי ועשויים לכלול טעויות: שעות פתיחה, מחירים, זמני נסיעה, זמינות או מידע שהשתנה. יש לבדוק מול המקור הרשמי לפני כל הזמנה, נסיעה או החלטה. המידע אינו מהווה ייעוץ מקצועי, ואין להסתמך עליו בנושאי בטיחות, בריאות, ויזה, ביטוח או דרישות כניסה למדינה.</p>
+ <h4>4. קישורים ושירותי צד שלישי</h4><p>האתר מקשר לאתרים ולשירותים חיצוניים (למשל Booking.com, Waze, Google Maps ו-WhatsApp). אנו לא אחראים לתוכן, למחירים, לזמינות או לתנאים של אתרים אלה. הזמנה דרכם כפופה לתנאים שלהם בלבד. חלק מהקישורים הם קישורי שותפים (Affiliate): ייתכן שנקבל עמלה על הזמנה שתבוצע דרכם, ללא תוספת מחיר עבורך.</p>
+ <h4>5. חשבון משתמש</h4><p>לשמירת טיולים יש להירשם עם פרטים נכונים. אתה אחראי לשמור על הגישה לחשבון ולתיבת הדואר שלך. ניתן למחוק טיולים בכל עת, ולבקש מחיקת חשבון בפנייה אלינו.</p>
+ <h4>6. שימוש הוגן</h4><p>אין להשתמש באתר לפעולות בלתי חוקיות, לשליחת תוכן פוגעני, לניסיון לפרוץ או לעקוף מגבלות שימוש, או לאיסוף מידע אוטומטי. אנו רשאים להגביל או לחסום חשבון שמפר תנאים אלה.</p>
+ <h4>7. קניין רוחני</h4><p>העיצוב, הקוד, הלוגו והתכנים של האתר שייכים ל-TripCraft. מסלול שנבנה עבורך מותר לך לשמור, להדפיס ולשתף לשימוש אישי.</p>
+ <h4>8. הגבלת אחריות</h4><p>השירות ניתן "כמות שהוא" (AS IS). במידה המרבית שהדין מתיר, TripCraft לא תישא באחריות לנזק ישיר או עקיף שנגרם משימוש באתר, מהסתמכות על מסלול, או מפעולה של צד שלישי.</p>
+ <h4>9. שינויים, דין וסמכות</h4><p>אנו רשאים לעדכן תנאים אלה; הנוסח המחייב הוא זה המפורסם באתר. על התנאים יחול הדין הישראלי, וסמכות השיפוט הבלעדית נתונה לבתי המשפט המוסמכים בישראל.</p>
+ </article>
+ <article id="tc-privacy"><h3>מדיניות פרטיות</h3>
+ <h4>איזה מידע נאסף</h4><p>פרטי הרשמה: שם, אימייל וטלפון. נתוני הטיול שהזנת: יעדים, תאריכים, טיסות, הרכב המטיילים (כולל גילאי ילדים), העדפות והערות. נתוני שימוש טכניים: זמני כניסה, פעולות באתר ולחיצות על קישורים חיצוניים. איננו מבקשים ואיננו שומרים מספרי כרטיס אשראי, תעודת זהות או דרכון — נא לא להזין אותם בשדות ההערות.</p>
+ <h4>למה המידע משמש</h4><p>לבניית המסלול ועריכתו, לשמירת הטיולים בחשבון שלך, לאבטחה ומניעת שימוש לרעה, לשיפור השירות, ולמדידת הפניות לשותפים (כמו Booking.com).</p>
+ <h4>עם מי המידע משותף</h4><p>עם ספקים שמפעילים עבורנו את השירות: שירותי ענן ומסד נתונים (Supabase), ספק בינה מלאכותית שבונה את המסלול (OpenAI) — הנתונים נשלחים אליו לצורך בניית המסלול בלבד — ושירותי מיפוי לאיתור מיקומים (OpenStreetMap). בלחיצה על קישור חיצוני עוברים לאתר של צד שלישי לפי מדיניותו. איננו מוכרים מידע אישי.</p>
+ <h4>אחסון ואבטחה</h4><p>המידע נשמר בשרתים מאובטחים, ייתכן שמחוץ לישראל, עם הרשאות גישה מוגבלות. בדפדפן נשמרים נתונים מקומיים (Local Storage) לצורך התחברות, טיוטות והעדפות נגישות. אין שימוש בעוגיות פרסום.</p>
+ <h4>הזכויות שלך</h4><p>אפשר לעיין במידע שלך, לתקן אותו, למחוק טיולים בעצמך מתוך "החשבון שלי", ולבקש מחיקת חשבון מלאה. לפניות: <a href="mailto:nzvi576@gmail.com">nzvi576@gmail.com</a>.</p>
+ <h4>קטינים</h4><p>השירות מיועד לבני 18 ומעלה. פרטי ילדים (כמו גיל) נאספים רק כדי להתאים את הטיול למשפחה.</p>
+ </article>
+ <article id="tc-access"><h3>הצהרת נגישות</h3>
+ <p>אנו רואים חשיבות בהנגשת האתר לאנשים עם מוגבלות, ופועלים להתאים אותו לתקן הישראלי ת"י 5568 (המבוסס על הנחיות WCAG 2.0) ברמה AA.</p>
+ <h4>מה הונגש באתר</h4><ul><li>תפריט נגישות (כפתור ♿): הגדלת טקסט, ניגודיות גבוהה, הדגשת קישורים, עצירת אנימציות, גופן קריא וסמן גדול. ההגדרות נשמרות בדפדפן.</li><li>ניווט מלא במקלדת, סימון פוקוס ברור, קישור "דלג לתוכן הראשי", וסגירת חלונות במקש Esc.</li><li>תוויות לשדות טפסים ולכפתורים עבור קוראי מסך, ותיאור טקסטואלי לתמונות.</li><li>תמיכה בעברית (מימין לשמאל) ובאנגלית, ותצוגה מותאמת לנייד ולמחשב.</li><li>כיבוד הגדרת "הפחתת תנועה" של מערכת ההפעלה.</li></ul>
+ <h4>מגבלות ידועות</h4><p>תוכן המסלולים נוצר אוטומטית, וייתכן שחלק מהשמות בו יופיעו בשפת המקור. אתרים חיצוניים שאליהם מקשר האתר (מפות, הזמנת מלונות) אינם בשליטתנו ונגישותם באחריות בעליהם. אנו ממשיכים לבדוק ולשפר.</p>
+ <h4>פנייה בנושא נגישות</h4><p>נתקלתם בבעיה? נשמח לשמוע ולתקן. רכז הנגישות: <a href="mailto:nzvi576@gmail.com">nzvi576@gmail.com</a>. נא לציין את העמוד, תיאור הבעיה, והדפדפן או הטכנולוגיה המסייעת שבה השתמשתם. ההצהרה עודכנה ב-27 בנובמבר 2026.</p>
+ </article>
+ </div>
 </section>
 </main><footer><span>© 2026 TripCraft · V160</span><span class="footer-links"><a href="#legal" data-he="פרטיות" data-en="Privacy">פרטיות</a><a href="#legal" data-he="תקנון" data-en="Terms">תקנון</a><a href="#legal" data-he="נגישות" data-en="Accessibility">נגישות</a></span></footer></div><div id="tcA11yPanel" class="a11y-panel" role="dialog" aria-label="אפשרויות נגישות"><h3 data-he="נגישות" data-en="Accessibility">נגישות</h3><div class="a11y-grid"><button class="btn soft" type="button" id="tcTextPlus" data-he="הגדל טקסט" data-en="Larger Text">הגדל טקסט</button><button class="btn soft" type="button" id="tcContrast" data-he="ניגודיות" data-en="Contrast">ניגודיות</button><button class="btn soft" type="button" id="tcUnderline" data-he="הדגש קישורים" data-en="Underline Links">הדגש קישורים</button><button class="btn soft" type="button" id="tcA11yReset" data-he="איפוס" data-en="Reset">איפוס</button></div><div style="margin-top:10px"><a href="#legal" data-he="הצהרת נגישות מלאה" data-en="Full accessibility statement">הצהרת נגישות מלאה</a></div></div>
 
@@ -1104,7 +1131,7 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 </script>
 
 
-<script src="tripcraft-data.js?v=182"></script>
+<script src="tripcraft-data.js?v=183"></script>
 <script id="tc-v57-ux">
 (function(){
  const countries=(window.TC_COUNTRIES_FULL&&window.TC_COUNTRIES_FULL.length)?window.TC_COUNTRIES_FULL.map(c=>c[1]):['אוסטריה','גרמניה','איטליה','צרפת','שווייץ','יוון','הונגריה','סלובקיה','ויאטנם','תאילנד','ספרד','פורטוגל','הולנד','בלגיה','צ׳כיה','פולין','קרואטיה','סלובניה','רומניה','בולגריה','קפריסין','טורקיה','בריטניה','אירלנד','דנמרק','נורווגיה','שוודיה','פינלנד','איסלנד','ארה״ב','קנדה','יפן','דרום קוריאה','סינגפור','איחוד האמירויות','גאורגיה','מונטנגרו','אלבניה','מלטה'];
@@ -1408,7 +1435,7 @@ document.querySelectorAll('.ac-picked-note').forEach(x=>x.remove());document.que
 <label for="tcNavToggle"><span class="ico" aria-hidden="true">☰</span><span data-he="עוד" data-en="More">עוד</span></label>
 </nav>
 <!-- V170: review before production deployment -->
-<script src="tripcraft-v160.js?v=182"></script>
-<script src="tripcraft-v170.js?v=182"></script>
+<script src="tripcraft-v160.js?v=183"></script>
+<script src="tripcraft-v170.js?v=183"></script>
 <script src="tripcraft-analytics.js?v=160"></script>
 </body></html>

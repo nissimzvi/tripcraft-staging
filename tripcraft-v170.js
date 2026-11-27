@@ -10,9 +10,20 @@
 
   var LANG = (document.documentElement.lang || 'he').indexOf('en') === 0 ? 'en' : 'he';
   var HE = LANG === 'he';
+  // Language toggle = real page switch (Hebrew page / English page), so nothing stays half-translated
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest && e.target.closest('[data-lang]');
+    if (!b) return;
+    var want = b.getAttribute('data-lang') === 'en' ? 'en' : 'he';
+    e.preventDefault(); e.stopImmediatePropagation();
+    try { localStorage.setItem('tc_v433_lang', want); } catch (x) {}
+    if (want === LANG) return;
+    var q = new URLSearchParams(location.search); q.delete('lang'); q.delete('r'); var s = q.toString();
+    location.href = new URL(want === 'en' ? 'index-en.html' : './', location.href).pathname + (s ? '?' + s : '') + location.hash;
+  }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=182'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=183'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -1278,6 +1289,77 @@
   function resumeJobs() { jobsGet().forEach(function (j) { if (j.state !== 'failed') poll(j); }); renderJobBar(); }
 
   /* ================================================================
+   * 11d. Accessibility (V175): working toggles, saved, keyboard, skip link
+   * ================================================================ */
+  var A11Y_KEY = 'tc_a11y_v175';
+  var A11Y = [
+    ['tcTextPlus', 'tc-large-text'], ['tcContrast', 'tc-high-contrast'], ['tcUnderline', 'tc-links-underlined'],
+    ['tcNoMotion', 'tc-no-motion', 'עצירת אנימציות', 'Pause animations'], ['tcReadable', 'tc-readable-font', 'גופן קריא', 'Readable font'],
+    ['tcBigCursor', 'tc-big-cursor', 'סמן גדול', 'Large cursor']
+  ];
+  function a11ySave() { lsSet(A11Y_KEY, A11Y.map(function (a) { return a[1]; }).filter(function (c) { return document.body.classList.contains(c); })); }
+  function a11ySync() { A11Y.forEach(function (a) { var b = document.getElementById(a[0]); if (b) b.setAttribute('aria-pressed', document.body.classList.contains(a[1]) ? 'true' : 'false'); }); }
+  function a11yPanelOpen(open) {
+    var p = document.getElementById('tcA11yPanel'), b = document.getElementById('tcA11yBtn'); if (!p) return;
+    p.classList.toggle('open', open); if (b) b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    if (open) { var f = p.querySelector('button'); if (f) f.focus(); } else if (b) b.focus();
+  }
+  function setupA11y() {
+    var p = document.getElementById('tcA11yPanel'), grid = p && p.querySelector('.a11y-grid'), reset = document.getElementById('tcA11yReset');
+    if (grid && !document.getElementById('tcNoMotion')) {
+      A11Y.forEach(function (a) {
+        if (!a[2] || document.getElementById(a[0])) return;
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'btn soft'; b.id = a[0];
+        b.setAttribute('data-he', a[2]); b.setAttribute('data-en', a[3]); b.textContent = t(a[2], a[3]);
+        grid.insertBefore(b, reset || null);
+      });
+    }
+    if (p) { p.setAttribute('aria-modal', 'false'); }
+    A11Y.forEach(function (a) {
+      var b = document.getElementById(a[0]); if (!b || b.dataset.v175) return; b.dataset.v175 = '1';
+      b.addEventListener('click', function (e) {
+        e.stopImmediatePropagation();
+        document.body.classList.toggle(a[1]); a11ySync(); a11ySave();
+      }, true);
+    });
+    if (reset && !reset.dataset.v175) {
+      reset.dataset.v175 = '1';
+      reset.addEventListener('click', function () { A11Y.forEach(function (a) { document.body.classList.remove(a[1]); }); a11ySync(); a11ySave(); });
+    }
+    var saved = lsGet(A11Y_KEY, []); if (Array.isArray(saved)) saved.forEach(function (c) { document.body.classList.add(c); });
+    a11ySync();
+    // skip link
+    if (!document.getElementById('tcSkip')) {
+      var sk = document.createElement('a'); sk.id = 'tcSkip'; sk.className = 'tc-skip'; sk.href = '#main';
+      sk.textContent = t('דלג לתוכן הראשי', 'Skip to main content');
+      sk.addEventListener('click', function (e) {
+        e.preventDefault(); var m = document.querySelector('main section.active, main .panel.active, main') || document.body;
+        m.setAttribute('tabindex', '-1'); m.focus();
+      });
+      document.body.insertBefore(sk, document.body.firstChild);
+    }
+    // hidden mobile menu must not be focusable
+    var mm = document.getElementById('tcMobileMenu');
+    if (mm) {
+      var syncInert = function () { var hidden = mm.getAttribute('aria-hidden') === 'true' && !mm.classList.contains('open'); if (hidden) mm.setAttribute('inert', ''); else mm.removeAttribute('inert'); };
+      syncInert(); new MutationObserver(syncInert).observe(mm, { attributes: true, attributeFilter: ['aria-hidden', 'class'] });
+    }
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.tc-legal-toc a'); if (!a) return;
+    e.preventDefault(); var el = document.querySelector(a.getAttribute('href')); if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true }); }
+  }, true);
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    var p = document.getElementById('tcA11yPanel'); if (p && p.classList.contains('open')) { a11yPanelOpen(false); return; }
+    var mm = document.getElementById('tcMobileMenu'); if (mm && mm.classList.contains('open') && window.tcMenu) window.tcMenu(false);
+  });
+  document.addEventListener('click', function (e) {
+    var p = document.getElementById('tcA11yPanel'); if (!p || !p.classList.contains('open')) return;
+    if (e.target.closest('#tcA11yPanel, #tcA11yBtn')) return; a11yPanelOpen(false);
+  });
+
+  /* ================================================================
    * 12. Boot
    * ================================================================ */
   function relabelCountryChips() {
@@ -1289,8 +1371,8 @@
     });
   }
   function boot() {
-    relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs();
-    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1[0-6]\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1[0-6]\d/, 'V170'); });
+    relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs(); setupA11y();
+    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V175'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });
     try { var cur = plannerStep1Part; showPartSilently(cur); } catch (e) {}
