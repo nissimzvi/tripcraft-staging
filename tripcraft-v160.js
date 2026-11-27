@@ -64,7 +64,7 @@
           date: day.date || '', title: day.title || '', overnight_location: day.lodging || '',
           day_summary: day.summary || '', route_summary: day.routeSummary || '',
           activities: (day.stops || []).map(function (s) {
-            return { time: s.time || '', name: s.name || s.place || '', location: s.place || '', description: s.what || '',
+            return { time: s.time || '', name: s.name || s.place || '', location: s.place || '', map_query: s.mapQuery || '', description: s.what || '',
               duration_minutes: Number(s.durationMinutes || 0), drive_minutes: Number(s.driveMinutes || 0),
               notes: s.notes || '', estimated_cost: Number(s.estimatedCost || 0) };
           })
@@ -80,7 +80,7 @@
         lodging: day.overnight_location != null ? day.overnight_location : (prev.lodging || ''),
         summary: day.day_summary || '', routeSummary: day.route_summary || '',
         stops: (day.activities || []).map(function (a) {
-          return { time: a.time || '', name: a.name || '', place: a.location || a.name || '', what: a.description || a.name || '',
+          return { time: a.time || '', name: a.name || '', place: a.location || a.name || '', mapQuery: a.map_query || '', what: a.description || a.name || '',
             durationMinutes: Number(a.duration_minutes || 0), driveMinutes: Number(a.drive_minutes || 0),
             notes: a.notes || '', estimatedCost: Number(a.estimated_cost || 0) };
         }).filter(function (s) { return s.place; })

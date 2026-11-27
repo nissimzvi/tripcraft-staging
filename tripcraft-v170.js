@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=187'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=188'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -696,8 +696,20 @@
     var iata = q.match(/\b([A-Z]{3})$/), ap = iata && window.tcAirportByCode(iata[1]);
     if (ap) { st.lat = ap[4]; st.lon = ap[5]; st.geoExact = true; return Promise.resolve({ lat: ap[4], lon: ap[5], exact: true }); }
     if (!isos.length) return Promise.resolve(null); // never search the whole world – Waze/Maps get the text instead
-    var key = isos.join(',') + '|' + norm(q);
+    var mq = String(st.mapQuery || '').trim();
+    var key = isos.join(',') + '|' + norm(mq || q);
     if (geoCache[key] !== undefined && inTripCountries(geoCache[key], isos)) { var c = geoCache[key]; if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; } return Promise.resolve(c); }
+    var head = q.split(/\s*[,،;|(–—]\s*|\s+-\s+|\s+ליד\s+|\s+near\s+/i)[0].trim();
+    return (mq ? geoLookup(mq, isos) : Promise.resolve(null)).then(function (c) { return c || geoLookup(q, isos); }).then(function (c) {
+      if (c || !head || head === q || head.length < 2 || VAGUE.test(head)) return c;
+      return geoLookup(head, isos); // e.g. "ספאטה, ליד נמל התעופה" → "ספאטה"
+    }).then(function (c) {
+      geoCache[key] = c; lsSet(GEO_KEY, geoCache);
+      if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; }
+      return c;
+    }).catch(function () { return null; });
+  }
+  function geoLookup(q, isos) {
     return nominatimSearch(q, isos, 1).then(function (rows) {
       var r = rows && rows[0];
       if (r) return { lat: +(+r.lat).toFixed(6), lon: +(+r.lon).toFixed(6), exact: true };
@@ -706,17 +718,12 @@
         var nq = norm(q).replace(/[^\p{L}\p{N} ]/gu, ''), hit = w.find(function (x) { var nt = norm(x.main).replace(/\s*\(.*\)$/, '').replace(/[^\p{L}\p{N} ]/gu, ''); return nt && (nt === nq || (nt.length > 3 && nq.indexOf(nt) === 0 && nq.length - nt.length < 12)); });
         return hit ? { lat: +(+hit.lat).toFixed(6), lon: +(+hit.lon).toFixed(6), exact: true } : null;
       });
-    }).then(function (c) {
-      if (c && !inTripCountries(c, isos)) c = null;
-      geoCache[key] = c; lsSet(GEO_KEY, geoCache);
-      if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; }
-      return c;
-    }).catch(function () { return null; });
+    }).then(function (c) { return c && inTripCountries(c, isos) ? c : null; }).catch(function () { return null; });
   }
   function wazeUrl(c, q) { return c ? 'https://www.waze.com/ul?ll=' + c.lat + '%2C' + c.lon + '&navigate=yes&zoom=17' : 'https://www.waze.com/ul?q=' + encodeURIComponent(q) + '&navigate=yes'; }
   function gmapsUrl(c, q) { return c ? 'https://www.google.com/maps/search/?api=1&query=' + c.lat + '%2C' + c.lon : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q); }
   function dayRouteUrl(day) {
-    var pts = (day.stops || []).map(function (s) { return s.lat && s.lon ? s.lat + ',' + s.lon : stopQuery(s); }).filter(Boolean);
+    var pts = (day.stops || []).map(function (s) { return s.lat && s.lon ? s.lat + ',' + s.lon : (s.mapQuery || stopQuery(s)); }).filter(Boolean);
     if (pts.length < 2) return pts.length ? gmapsUrl(null, pts[0]) : '';
     return 'https://www.google.com/maps/dir/?api=1&travelmode=driving&origin=' + encodeURIComponent(pts[0]) + '&destination=' + encodeURIComponent(pts[pts.length - 1]) + (pts.length > 2 ? '&waypoints=' + pts.slice(1, -1).map(encodeURIComponent).join('%7C') : '');
   }
@@ -727,7 +734,9 @@
     var kind = a.dataset.tcNav, w = window.open('about:blank', '_blank');
     geocodeStop(st).then(function (c) {
       if (!c) toast(t('לא נמצא מיקום מדויק למקום הזה — פותח חיפוש לפי שם.', 'No exact location found; opening a name search.'), 'error');
-      var url = kind === 'waze' ? wazeUrl(c, stopQuery(st)) : gmapsUrl(c, stopQuery(st));
+      var q = String(st.mapQuery || '').trim() || stopQuery(st), iso = resultCountryIsos()[0], cn = iso ? countryLabel(iso) : '';
+      if (!c && !st.mapQuery && cn && q.indexOf(cn) < 0) q += ', ' + cn; // text search always carries the trip's country
+      var url = kind === 'waze' ? wazeUrl(c, q) : gmapsUrl(c, q);
       if (w) w.location.href = url; else location.href = url;
       if (c) scheduleSave();
     });
@@ -825,7 +834,9 @@
       .then(function (v) {
         if (!v) return;
         var placeChanged = v[1].trim() !== (st.place || '');
-        st.name = v[0].trim() || st.name; st.place = v[1].trim() || st.place; st.time = v[2]; st.what = v[3].trim();
+        var oldPlace = st.place;
+        st.name = v[0].trim() || st.name; st.place = v[1].trim() || st.place;
+        if (st.place !== oldPlace) { delete st.mapQuery; delete st.lat; delete st.lon; delete st.geoExact; } st.time = v[2]; st.what = v[3].trim();
         if (placeChanged) { delete st.lat; delete st.lon; delete st.geoExact; }
         day.stops.sort(function (a, b) { return String(a.time || '99').localeCompare(String(b.time || '99')); });
         afterManualEdit(t('התחנה עודכנה', 'Stop updated'));
@@ -1177,7 +1188,7 @@
   function mapDays(ai) {
     return (ai.days || []).map(function (day) {
       return { date: day.date || '', title: day.title || '', lodging: day.overnight_location || '', summary: day.day_summary || '', routeSummary: day.route_summary || '',
-        stops: (day.activities || []).map(function (a) { return { time: a.time || '', name: a.name || '', place: a.location || a.name || '', what: a.description || a.name || '', durationMinutes: Number(a.duration_minutes || 0), driveMinutes: Number(a.drive_minutes || 0), notes: a.notes || '', estimatedCost: Number(a.estimated_cost || 0) }; }).filter(function (s) { return s.place; }) };
+        stops: (day.activities || []).map(function (a) { return { time: a.time || '', name: a.name || '', place: a.location || a.name || '', mapQuery: a.map_query || '', what: a.description || a.name || '', durationMinutes: Number(a.duration_minutes || 0), driveMinutes: Number(a.drive_minutes || 0), notes: a.notes || '', estimatedCost: Number(a.estimated_cost || 0) }; }).filter(function (s) { return s.place; }) };
     });
   }
   function staysFrom(days) {
@@ -1430,7 +1441,7 @@
   }
   function boot() {
     relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs(); setupA11y();
-    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V178'); });
+    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V179'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });
     try { var cur = plannerStep1Part; showPartSilently(cur); } catch (e) {}
