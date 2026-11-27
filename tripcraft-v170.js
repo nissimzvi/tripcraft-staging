@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=188'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=189'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -594,7 +594,7 @@
         var body = opts && opts.body;
         if (body && typeof body === 'object' && body.action) {
           var prof = fullProfile();
-          var isBuild = body.action === 'build_trip' || body.action === 'build_trip_async';
+          var isBuild = body.action === 'build_trip' || body.action === 'build_trip_async' || body.action === 'trip_skeleton';
           if (body.trip && typeof body.trip === 'object' && !isBuild && !body.trip.preferences) {
             // edits / rain / verify / hotels of an existing trip: use the preferences saved with THAT trip
             var dd = draft(), pp = dd && dd.plannerProfile;
@@ -605,7 +605,7 @@
               body.trip.preferences = prof;
               body.trip.strict_instructions = strictInstructions(prof);
               body.trip.hotel_recommendations_per_area = 3;
-              if (prof.must_see.length) body.trip.must = prof.must_see.join(', ');
+              if (prof.must_see.length && !body.trip.part) body.trip.must = prof.must_see.join(', ');
               try { if (isDomestic()) { body.trip.domestic = true; body.trip.arrival_airport = ''; body.trip.departure_airport = ''; body.trip.arrival_time = ''; body.trip.departure_time = ''; } } catch (e) {}
               if (prof.ai_notes) { body.trip.ai_notes = prof.ai_notes; body.trip.notes = [body.trip.notes, 'הערות הנוסע (מחייב): ' + prof.ai_notes].filter(Boolean).join('\n'); }
             }
@@ -1081,26 +1081,27 @@
    * 11b. Traveller notes for the AI - prominent at creation and when updating
    * ================================================================ */
   function aiNotesValue() { var el = $('tcAiNotes'); var v = el ? el.value.trim() : ''; if (!v) { var d = draft(); v = d && d.plannerProfile && d.plannerProfile.aiNotes || ''; } return String(v).slice(0, 3000); }
-  var NOTE_EXAMPLES = HE ? ['אנחנו לא אוכלים בשר', 'חשוב לנו לסיים כל יום עד 18:00', 'יש לנו ילד בן 4 — צריך מנוחת צהריים', 'רוצים לפחות יום אחד בלי נסיעות', 'מעדיפים מסעדות מקומיות ולא תיירותיות', 'יום הולדת ב-12/05 — ארוחת ערב מיוחדת']
-    : ['We don’t eat meat', 'We want to finish each day by 6pm', 'We have a 4-year-old — midday rest needed', 'At least one day without driving', 'Local restaurants, not touristy ones', 'Birthday on 12/05 — special dinner'];
+  var NOTE_EXAMPLES = HE ? ['אנחנו לא אוכלים בשר', 'חשוב לנו לסיים כל יום עד 18:00', 'יש לנו ילד בן 4 — צריך מנוחת צהריים', 'רוצים לפחות יום אחד בלי נסיעות', 'מעדיפים מסעדות מקומיות ולא תיירותיות', 'רוצים ערב רומנטי אחד עם נוף']
+    : ['We don’t eat meat', 'We want to finish each day by 6pm', 'We have a 4-year-old — midday rest needed', 'At least one day without driving', 'Local restaurants, not touristy ones', 'One romantic evening with a view'];
   function buildNotesCard() {
     var step7 = document.querySelector('.planner-step[data-step="7"]'), sum = $('plannerSummary');
-    if (!step7 || !sum || $('tcAiNotesCard')) return;
+    var freeGrid = $('plFree') && $('plFree').closest('.planner-grid');
+    if ((!freeGrid && (!step7 || !sum)) || $('tcAiNotesCard')) return;
     var card = document.createElement('section');
     card.id = 'tcAiNotesCard'; card.className = 'tc-notes-card';
-    card.innerHTML = '<div class="tc-notes-head"><span class="tc-notes-icon">📝</span><div><h3>' + t('הערות ל-AI — כל מה שחשוב לכם', 'Notes for the AI — everything that matters to you') + '</h3><p>' +
-      t('כתבו כאן במילים שלכם: הרגלים, בקשות מיוחדות, אירועים, אוכל, קצב, מה לא לעשות. ה-AI מתכנן לפי ההערות האלה כהנחיות מחייבות.', 'Write in your own words: habits, special requests, events, food, pace, what to avoid. The AI treats these notes as binding instructions.') + '</p></div></div>' +
+    card.innerHTML = '<div class="tc-notes-head"><span class="tc-notes-icon">📝</span><div><h3>' + t('הערות כלליות ל-AI — כל מה שחשוב לכם', 'General notes for the AI — everything that matters to you') + '</h3><p>' +
+      t('כתבו כאן במילים שלכם: הרגלים, בקשות מיוחדות, אוכל, קצב, מה לא לעשות. ה-AI מתכנן לפי ההערות האלה כהנחיות מחייבות. (אירוע או טיסה בתאריך מסוים – בשדה שמעל.)', 'Write in your own words: habits, special requests, food, pace, what to avoid. The AI treats these notes as binding instructions. (An event or flight on a specific date goes in the field above.)') + '</p></div></div>' +
       '<textarea id="tcAiNotes" rows="6" maxlength="3000" placeholder="' + esc(t('למשל: אנחנו קמים מאוחר, לא אוהבים מוזיאונים, רוצים ערב רומנטי אחד ושקיעה מנקודת תצפית…', 'e.g. We wake up late, don’t like museums, want one romantic evening and a sunset viewpoint…')) + '"></textarea>' +
       '<div class="tc-notes-examples"><small>' + t('רעיונות — לחצו כדי להוסיף:', 'Ideas — tap to add:') + '</small>' + NOTE_EXAMPLES.map(function (x) { return '<button type="button" class="tc-chip-btn">' + esc(x) + '</button>'; }).join('') + '</div>' +
       '<div class="tc-notes-count"><span id="tcAiNotesCount">0</span>/3000</div>';
-    step7.insertBefore(card, sum);
+    if (freeGrid) freeGrid.insertAdjacentElement('afterend', card); else step7.insertBefore(card, sum); // right under the existing date-specific notes
     var ta = $('tcAiNotes'), cnt = $('tcAiNotesCount');
     try { ta.value = localStorage.getItem('tc_v170_ai_notes') || ''; } catch (e) {}
     function sync() { cnt.textContent = ta.value.length; try { localStorage.setItem('tc_v170_ai_notes', ta.value); } catch (e) {} }
     ta.addEventListener('input', sync); sync();
     card.querySelectorAll('.tc-chip-btn').forEach(function (b) { b.addEventListener('click', function () { ta.value = (ta.value.trim() ? ta.value.trim() + '\n' : '') + b.textContent; sync(); ta.focus(); }); });
     var s1 = document.querySelector('.planner-step[data-step="1"] .step1-subnav');
-    if (s1 && !$('tcNotesTeaser')) s1.insertAdjacentHTML('afterend', '<div id="tcNotesTeaser" class="tc-context">📝 ' + t('בסוף האשף יש מקום להערות חופשיות ל-AI — שם כותבים כל מה שחשוב לכם.', 'At the end of the wizard there is room for your own notes to the AI.') + '</div>');
+    if (false && s1 && !$('tcNotesTeaser')) s1.insertAdjacentHTML('afterend', '<div id="tcNotesTeaser" class="tc-context">📝 ' + t('בסוף האשף יש מקום להערות חופשיות ל-AI — שם כותבים כל מה שחשוב לכם.', 'At the end of the wizard there is room for your own notes to the AI.') + '</div>');
   }
   function notesForDraft() {
     var d = draft(); if (!d) return;
@@ -1314,14 +1315,98 @@
     toast(t('בניית הטיול "' + job.name + '" נכשלה. אפשר לנסות שוב מהפס העליון.', 'Building "' + job.name + '" failed. You can retry from the top bar.'), 'error');
     notify('TripCraft', t('בניית הטיול נכשלה', 'The trip build failed'));
   }
+  /* ---- V180: fast builds – long trips are built in parallel parts from a shared day plan ---- */
+  var PART_DAYS = 4;
+  function datesFrom(a, b) { var out = [], d = a; for (var i = 0; d && i < 60; i++) { out.push(d); if (d === b) break; d = nextDay(d); } return out; }
+  function invokeTimed(body, ms) {
+    var sb = sbc();
+    return Promise.race([sb.functions.invoke(fnName(), { body: body }), new Promise(function (_, rej) { setTimeout(function () { rej(new Error('TIMEOUT')); }, ms); })]);
+  }
+  function partRequests(request, skeleton) {
+    var all = datesFrom(request.start_date, request.end_date), n = Math.ceil(all.length / PART_DAYS), size = Math.ceil(all.length / n), parts = [];
+    var plan = {}; (skeleton || []).forEach(function (d) { if (d && d.date) plan[d.date] = d; });
+    for (var k = 0; k < n; k++) {
+      var ds = all.slice(k * size, (k + 1) * size); if (!ds.length) continue;
+      var q = JSON.parse(JSON.stringify(request)); q.start_date = ds[0]; q.end_date = ds[ds.length - 1];
+      if (k > 0) { q.arrival_airport = ''; q.arrival_time = ''; }
+      if (k < n - 1) { q.departure_airport = ''; q.departure_time = ''; }
+      var prev = plan[all[k * size - 1]], others = all.filter(function (d) { return ds.indexOf(d) < 0 && plan[d]; }).map(function (d) { return plan[d].focus; }).filter(Boolean);
+      var txt = 'MULTI-PART BUILD (binding): this is part ' + (k + 1) + ' of ' + n + ' of ONE continuous trip (' + request.start_date + ' to ' + request.end_date + '). Build ONLY the days ' + ds[0] + ' to ' + ds[ds.length - 1] + '. Follow this fixed day plan exactly:\n' +
+        ds.map(function (d) { var p = plan[d] || {}; return '- ' + d + ': ' + (p.focus || '') + ' | overnight: ' + (p.overnight_location || '-'); }).join('\n') +
+        (k > 0 ? '\nThe first day starts in the morning at ' + ((prev && prev.overnight_location) || 'the previous overnight location') + ' – the travelers slept there; there is NO arrival flight in this part.' : '') +
+        (k < n - 1 ? '\nThe last day ends with the overnight shown above – there is NO departure flight and no return to the airport in this part.' : '') +
+        '\nMust-see places and the traveler notes were already assigned to specific days in this plan – include only what belongs to your days.' +
+        (others.length ? '\nThese places belong to OTHER days – do not use them here: ' + others.join('; ') : '');
+      q.notes = [q.notes, txt].filter(Boolean).join('\n'); q.part = { index: k + 1, total: n }; q.must = '';
+      parts.push({ req: q, state: 'queued', tries: 0 });
+    }
+    return parts;
+  }
+  function queuePart(job, i) {
+    var u = me(), part = job.parts[i];
+    part.tries = (part.tries || 0) + 1; part.state = 'running'; part.startedAt = Date.now(); delete part.jobId;
+    return invokeTimed({ action: 'build_trip_async', trip_id: job.tripId, user_id: (u && u.id) || null, trip: part.req }, 30000).then(function (r) {
+      var d = r && r.data; if (!d || !d.ok || !d.job_id) throw new Error((d && d.error) || 'QUEUE_FAILED');
+      part.jobId = d.job_id;
+    });
+  }
+  function saveJob(job) { var all = jobsGet(), found = false; all = all.map(function (j) { if (j.id === job.id) { found = true; return job; } return j; }); if (!found) all.push(job); jobsSet(all); }
   function startJob(request, profile, name, tripId, aiNotes) {
     var sb = sbc(), u = me(); if (!sb || !u) return Promise.reject(new Error(t('אין חיבור לחשבון', 'Not signed in')));
-    return sb.functions.invoke(fnName(), { body: { action: 'build_trip_async', trip_id: tripId, user_id: u.id || null, trip: request } }).then(function (r) {
-      var d = r && r.data;
-      if (!d || !d.ok || !d.job_id) throw new Error((d && d.error) || (r && r.error && r.error.message) || 'QUEUE_FAILED');
-      var job = { id: d.job_id, tripId: tripId, name: name, startedAt: Date.now(), state: 'running', profile: profile, request: request, aiNotes: aiNotes };
-      jobsSet(jobsGet().concat([job])); poll(job); return job;
-    });
+    var job = { id: 'grp-' + Date.now(), tripId: tripId, name: name, startedAt: Date.now(), state: 'running', profile: profile, request: request, aiNotes: aiNotes, parts: [] };
+    var nDays = datesFrom(request.start_date, request.end_date).length;
+    saveJob(job);
+    function skeletonOnce() { return invokeTimed({ action: 'trip_skeleton', trip_id: tripId, user_id: u.id || null, trip: JSON.parse(JSON.stringify(request)) }, 60000).then(function (r) { var d = r && r.data; return d && d.ok && d.days && d.days.length ? d.days : null; }).catch(function () { return null; }); }
+    var planP = nDays > PART_DAYS ? skeletonOnce().then(function (sk) { return sk || skeletonOnce(); }) : Promise.resolve(null);
+    return planP.then(function (skeleton) {
+      job.parts = skeleton ? partRequests(request, skeleton) : [{ req: request, state: 'queued', tries: 0 }];
+      return Promise.all(job.parts.map(function (_, i) { return queuePart(job, i); }));
+    }).then(function () { saveJob(job); pollGroup(job); return job; }, function (e) { jobRemove(job.id); throw e; });
+  }
+  function mergeParts(results) {
+    var first = results[0], last = results[results.length - 1], days = [];
+    results.forEach(function (r) { (r.days || []).forEach(function (d) { days.push(d); }); });
+    days.forEach(function (d, i) { d.day_number = i + 1; });
+    var m = Object.assign({}, first, { days: days, end_date: last.end_date || first.end_date });
+    var notes = []; results.forEach(function (r) { (r.important_notes || []).forEach(function (x) { if (notes.indexOf(x) < 0) notes.push(x); }); }); m.important_notes = notes;
+    var c0 = first.estimated_trip_cost;
+    if (typeof c0 === 'number') m.estimated_trip_cost = results.reduce(function (a, r) { return a + (+r.estimated_trip_cost || 0); }, 0);
+    else if (c0 && typeof c0 === 'object') { var sum = {}; Object.keys(c0).forEach(function (k) { sum[k] = typeof c0[k] === 'number' ? results.reduce(function (a, r) { return a + (+((r.estimated_trip_cost || {})[k]) || 0); }, 0) : c0[k]; }); m.estimated_trip_cost = sum; }
+    if (results.length > 1) m.summary = results.map(function (r) { return r.summary; }).filter(Boolean).join(' ');
+    return m;
+  }
+  window.tcV180 = { partRequests: partRequests, mergeParts: mergeParts, datesFrom: datesFrom };
+  function pollGroup(job) {
+    if (polling[job.id]) return; polling[job.id] = true;
+    (function tick() {
+      var cur = jobsGet().find(function (j) { return j.id === job.id; });
+      if (!cur || cur.state === 'failed') { delete polling[job.id]; return; }
+      var sb = sbc(); if (!sb || !me()) { setTimeout(tick, 5000); return; }
+      var ids = cur.parts.map(function (p) { return p.jobId; }).filter(Boolean);
+      if (!ids.length) { setTimeout(tick, 4000); return; }
+      sb.from('tripcraft_build_jobs').select('id,status,result,error').in('id', ids).then(function (r) {
+        var rows = (r && r.data) || [], retries = [];
+        cur.parts.forEach(function (p, i) {
+          var row = rows.find(function (x) { return x.id === p.jobId; }); if (p.state === 'done') return;
+          if (row && row.status === 'done' && row.result && row.result.itinerary) { p.state = 'done'; p.result = row.result; return; }
+          var bad = (row && row.status === 'failed') || (Date.now() - (p.startedAt || cur.startedAt) > JOB_MAX_MS);
+          if (bad) { if (p.tries < 2) retries.push(i); else p.state = 'failed'; }
+        });
+        if (cur.parts.some(function (p) { return p.state === 'failed'; })) { delete polling[job.id]; saveJob(cur); fail(cur, 'PART_FAILED'); return; }
+        var next = retries.length ? Promise.all(retries.map(function (i) { return queuePart(cur, i); })) : Promise.resolve();
+        next.then(function () {
+          saveJob(cur);
+          if (cur.parts.every(function (p) { return p.state === 'done'; })) {
+            delete polling[job.id];
+            var res = cur.parts.map(function (p) { return p.result; });
+            var payload = { itinerary: mergeParts(res.map(function (x) { return x.itinerary; })), usage: res.map(function (x) { return x.usage; }), cost_usd: res.reduce(function (a, x) { return a + (+x.cost_usd || 0); }, 0) };
+            materialize(cur, payload).catch(function (e) { fail(cur, e && e.message); });
+            return;
+          }
+          setTimeout(tick, 4000);
+        }, function (e) { delete polling[job.id]; fail(cur, e && e.message); });
+      }, function () { setTimeout(tick, 6000); });
+    })();
   }
   document.addEventListener('click', function (e) {
     var r = e.target.closest('[data-job-retry]'), x = e.target.closest('[data-job-dismiss]');
@@ -1355,7 +1440,7 @@
       .catch(function (er) { window.tcAlert(t('לא הצלחנו להתחיל את בניית הטיול: ', 'Could not start the build: ') + (er && er.message || er)); })
       .then(function () { btn.dataset.busy = ''; btn.disabled = false; btn.textContent = label; });
   }, true);
-  function resumeJobs() { jobsGet().forEach(function (j) { if (j.state !== 'failed') poll(j); }); renderJobBar(); }
+  function resumeJobs() { jobsGet().forEach(function (j) { if (j.state === 'failed') return; if (j.parts) { if (j.parts.length && j.parts.every(function (p) { return p.jobId || p.state === 'done'; })) pollGroup(j); else jobUpdate(j.id, { state: 'failed' }); } else poll(j); }); renderJobBar(); }
 
   /* ================================================================
    * 11d. Accessibility (V175): working toggles, saved, keyboard, skip link
@@ -1441,7 +1526,7 @@
   }
   function boot() {
     relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs(); setupA11y();
-    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V179'); });
+    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V180'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });
     try { var cur = plannerStep1Part; showPartSilently(cur); } catch (e) {}

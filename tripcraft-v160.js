@@ -7,7 +7,7 @@
 (function () {
   'use strict';
   var MAX_EDITS = 5;
-  var EDIT_TIMEOUT_MS = 130000; // V170: AI edit returns the full itinerary and can take up to ~2 minutes
+  var EDIT_TIMEOUT_MS = 150000; // V170: AI edit returns the full itinerary and can take up to ~2 minutes
   var isEn = function () { return String(document.documentElement.lang || 'he').toLowerCase().indexOf('en') === 0; };
   var t = function (he, en) { return isEn() ? en : he; };
   var $ = function (id) { return document.getElementById(id); };
