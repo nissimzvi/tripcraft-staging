@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=190'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=191'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -1361,13 +1361,17 @@
     function skeletonOnce() { return invokeTimed({ action: 'trip_skeleton', trip_id: tripId, user_id: u.id || null, trip: JSON.parse(JSON.stringify(request)) }, 60000).then(function (r) { var d = r && r.data; return d && d.ok && d.days && d.days.length ? d.days : null; }).catch(function () { return null; }); }
     var planP = nDays > PART_DAYS ? skeletonOnce().then(function (sk) { return sk || skeletonOnce(); }) : Promise.resolve(null);
     return planP.then(function (skeleton) {
-      job.parts = skeleton ? partRequests(request, skeleton) : [{ req: request, state: 'queued', tries: 0 }];
+      job.parts = skeleton ? partRequests(request, skeleton) : [{ req: request, state: 'queued', tries: 0 }]; job.skeleton = skeleton || null;
       return Promise.all(job.parts.map(function (_, i) { return queuePart(job, i); }));
     }).then(function () { saveJob(job); pollGroup(job); return job; }, function (e) { jobRemove(job.id); throw e; });
   }
-  function mergeParts(results) {
+  function mergeParts(results, skeleton) {
     var first = results[0], last = results[results.length - 1], days = [];
     results.forEach(function (r) { (r.days || []).forEach(function (d) { days.push(d); }); });
+    // same overnight in the plan = same name everywhere (parts may phrase it differently)
+    var plan = {}; (skeleton || []).forEach(function (x) { if (x && x.date) plan[x.date] = norm(x.overnight_location || ''); });
+    var canon = {};
+    days.forEach(function (d) { var k = plan[d.date]; if (!k || !d.overnight_location) return; if (!canon[k]) canon[k] = d.overnight_location; else d.overnight_location = canon[k]; });
     days.forEach(function (d, i) { d.day_number = i + 1; });
     var m = Object.assign({}, first, { days: days, end_date: last.end_date || first.end_date });
     var notes = []; results.forEach(function (r) { (r.important_notes || []).forEach(function (x) { if (notes.indexOf(x) < 0) notes.push(x); }); }); m.important_notes = notes;
@@ -1401,7 +1405,7 @@
           if (cur.parts.every(function (p) { return p.state === 'done'; })) {
             delete polling[job.id];
             var res = cur.parts.map(function (p) { return p.result; });
-            var payload = { itinerary: mergeParts(res.map(function (x) { return x.itinerary; })), usage: res.map(function (x) { return x.usage; }), cost_usd: res.reduce(function (a, x) { return a + (+x.cost_usd || 0); }, 0) };
+            var payload = { itinerary: mergeParts(res.map(function (x) { return x.itinerary; }), cur.skeleton), usage: res.map(function (x) { return x.usage; }), cost_usd: res.reduce(function (a, x) { return a + (+x.cost_usd || 0); }, 0) };
             materialize(cur, payload).catch(function (e) { fail(cur, e && e.message); });
             return;
           }
