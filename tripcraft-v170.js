@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=189'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=190'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -1234,7 +1234,7 @@
     var hasHotels = ((d.aiItinerary || {}).hotel_recommendations || []).length > 0 || !wantsHotels(d);
     if (d.verification && hasHotels) return;
     if (!me()) return;
-    healing[d.tripId] = true;
+    // (enrichInBackground marks the trip as in progress)
     var pr = d.plannerProfile || {};
     var request = { country: pr.country || d.country, region: pr.region || '', destination: pr.destination || pr.country || d.country, start_date: pr.start || (d.days[0] || {}).date, end_date: pr.end || (d.days[d.days.length - 1] || {}).date,
       travelers: pr.people || 2, language: HE ? 'he' : 'en', trip_name: d.name, group: pr.group, transport: pr.transport, interests: pr.interests, must: pr.must, avoid: pr.avoid, notes: pr.free || '' };
@@ -1244,6 +1244,7 @@
   }
   function enrichInBackground(obj, request, opt) {
     opt = opt || {};
+    if (healing[obj.tripId]) return; healing[obj.tripId] = true; // one enrichment per trip at a time
     if (!wantsHotels(obj)) opt.skipHotels = true;
     if (!opt.skipHotels) hotelState[obj.tripId] = 'loading';
     var sb = sbc(); if (!sb) return;
@@ -1255,7 +1256,8 @@
       if (!res[0] || !res[1]) console.warn('V172 enrichment partial', obj.tripId, !!res[0], !!res[1]);
       if (res[0]) { target.verification = res[0].verification || null; target.aiUsage = Object.assign({}, target.aiUsage, { verify: res[0].usage || null, verifyCostUsd: res[0].cost_usd || 0 }); }
       if (res[1]) { target.aiItinerary = Object.assign({}, target.aiItinerary, { hotel_recommendations: res[1].hotel_recommendations || [] }); }
-      if (!opt.skipHotels) { hotelState[obj.tripId] = (res[1] && (res[1].hotel_recommendations || []).length) ? null : 'failed'; healing[obj.tripId] = false; }
+      if (!opt.skipHotels) hotelState[obj.tripId] = (res[1] && (res[1].hotel_recommendations || []).length) ? null : 'failed';
+      if (!(res[0] || res[1])) healing[obj.tripId] = false; // allow a later retry only if nothing was saved
       try { var cd = draft(); if (cd && cd.tripId === obj.tripId) renderHotels(); } catch (e) {}
       target.buildStatus = 'verified-save';
       if (res[0] || res[1]) target.enrichedAt = new Date().toISOString();
