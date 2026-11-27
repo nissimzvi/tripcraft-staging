@@ -1,9 +1,10 @@
 /* TripCraft NEW (V200) – "passport & route" identity. Warm sand, deep sea, sunset coral.
    NOTE: review before production deployment. */
 :root{
-  --tcn-ink:#0b1e2b; --tcn-sea:#0a5c5a; --tcn-sea-2:#0f8580; --tcn-sea-3:#073f3e; --tcn-coral:#ff6a3d; --tcn-coral-2:#f04e23;
+  --tcn-ink:#0b1e2b; --tcn-sea:#0b5fa5; --tcn-sea-2:#1479c9; --tcn-sea-3:#083a68; --tcn-sea-soft:#e6f0fa; --tcn-sea-tint:#f3f8fd; --tcn-coral:#ff6a3d; --tcn-coral-2:#f04e23;
   --tcn-sun:#ffb347; --tcn-sand:#fbf3e6; --tcn-paper:#fffaf3; --tcn-line:#eadfcd; --tcn-muted:#5d6b73;
-  --tc-bg:var(--tcn-sand); --tc-brand:var(--tcn-sea); --tc-brand-2:var(--tcn-sea-3); --tc-accent:var(--tcn-coral); --tc-ink:var(--tcn-ink);
+  --tc-bg:var(--tcn-sand); --tc-brand:var(--tcn-sea); --tc-brand-2:var(--tcn-sea-3); --tc-brand-soft:var(--tcn-sea-soft);
+  --brand:var(--tcn-sea); --brand-ink:var(--tcn-sea-3); --brand-soft:var(--tcn-sea-soft); --brand-tint:var(--tcn-sea-tint); --tc-accent:var(--tcn-coral); --tc-ink:var(--tcn-ink);
   --tcn-shadow:0 2px 4px rgba(11,30,43,.05),0 18px 40px rgba(11,30,43,.12);
   --tcn-display:"Secular One","Rubik",system-ui,sans-serif;
 }
@@ -18,7 +19,7 @@ header,.site-header{background:rgba(255,250,243,.92)!important;backdrop-filter:s
 #home.tcn-hero{position:relative;isolation:isolate;border-radius:0 0 36px 36px;overflow:hidden}
 #home.tcn-hero::after{content:"";position:absolute;inset:0;z-index:-1;background:
   radial-gradient(120% 90% at 85% 10%,rgba(255,179,71,.28),transparent 55%),
-  linear-gradient(200deg,rgba(7,63,62,.15) 0%,rgba(7,63,62,.55) 55%,rgba(11,30,43,.88) 100%)}
+  linear-gradient(200deg,rgba(8,58,104,.15) 0%,rgba(8,58,104,.55) 55%,rgba(9,24,44,.88) 100%)}
 #home.tcn-hero h2{font-family:var(--tcn-display)!important;font-size:clamp(2.6rem,6.2vw,4.8rem)!important;line-height:1.02!important;text-shadow:0 6px 30px rgba(0,0,0,.35)}
 #home.tcn-hero h2 span:last-child{background:linear-gradient(90deg,#ffd29a,var(--tcn-coral));-webkit-background-clip:text;background-clip:text;color:transparent}
 #home.tcn-hero p{font-size:clamp(1.02rem,1.6vw,1.2rem)!important;color:rgba(255,255,255,.92)!important;max-width:620px}
@@ -31,7 +32,7 @@ header,.site-header{background:rgba(255,250,243,.92)!important;backdrop-filter:s
 .tc-home-content{background:transparent!important}
 .tc-home-section{position:relative;padding-top:56px!important}
 .tc-home-section + .tc-home-section::before{content:"";position:absolute;top:8px;left:50%;width:min(520px,70%);height:30px;transform:translateX(-50%);
-  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 30'%3E%3Cpath d='M4 22 C 120 -6, 220 34, 330 12 S 470 4, 500 14' fill='none' stroke='%23ff6a3d' stroke-width='2.2' stroke-dasharray='2 9' stroke-linecap='round'/%3E%3Ctext x='496' y='20' font-size='16' fill='%230a5c5a'%3E%E2%9C%88%3C/text%3E%3C/svg%3E") center/contain no-repeat;opacity:.75}
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 520 30'%3E%3Cpath d='M4 22 C 120 -6, 220 34, 330 12 S 470 4, 500 14' fill='none' stroke='%23ff6a3d' stroke-width='2.2' stroke-dasharray='2 9' stroke-linecap='round'/%3E%3Ctext x='496' y='20' font-size='16' fill='%230b5fa5'%3E%E2%9C%88%3C/text%3E%3C/svg%3E") center/contain no-repeat;opacity:.75}
 .tc-home-section-head span{display:inline-block;padding:5px 12px;border-radius:999px;background:#ffe6dc;color:var(--tcn-coral-2)!important;font-weight:800;font-size:.82rem;letter-spacing:.03em}
 .tc-home-section-head h2{font-size:clamp(1.8rem,3.6vw,2.6rem)!important;color:var(--tcn-ink)!important;margin:.35em 0 .2em!important;position:relative;display:inline-block}
 .tc-home-section-head h2::after{content:"";display:block;height:10px;margin-top:2px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 10' preserveAspectRatio='none'%3E%3Cpath d='M2 7 Q 50 1 100 6 T 198 4' fill='none' stroke='%23ffb347' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat}
@@ -73,7 +74,7 @@ header,.site-header{background:rgba(255,250,243,.92)!important;backdrop-filter:s
 .tcn-faq details[open] summary::after{content:"–"}
 .tcn-faq details p{margin:0 0 16px;color:#33444d;line-height:1.7}
 .tcn-cta-band{margin-top:34px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;padding:26px 28px;border-radius:26px;color:#fff;
-  background:radial-gradient(90% 140% at 0% 0%,rgba(255,179,71,.35),transparent 60%),linear-gradient(135deg,var(--tcn-sea-2),var(--tcn-sea-3));box-shadow:0 20px 44px rgba(7,63,62,.35)}
+  background:radial-gradient(90% 140% at 0% 0%,rgba(255,179,71,.35),transparent 60%),linear-gradient(135deg,var(--tcn-sea-2),var(--tcn-sea-3));box-shadow:0 20px 44px rgba(8,58,104,.35)}
 .tcn-cta-band b{display:block;font-family:var(--tcn-display);font-size:1.6rem;font-weight:400}
 .tcn-cta-band span{opacity:.9}
 .tcn-btn-coral{display:inline-flex;align-items:center;justify-content:center;padding:14px 26px;border-radius:999px;font-weight:800;text-decoration:none;color:#fff!important;background:linear-gradient(135deg,var(--tcn-coral),var(--tcn-coral-2));box-shadow:0 10px 24px rgba(240,78,35,.4)}
@@ -102,7 +103,7 @@ header,.site-header{background:rgba(255,250,243,.92)!important;backdrop-filter:s
 .tcn-book-badge b{display:inline-block;margin-inline-end:6px;padding:2px 10px;border-radius:999px;background:var(--tcn-coral);color:#fff;font-size:.82rem}
 
 /* guest sign-in note before Build */
-.tcn-guest-note{margin:12px 0;padding:12px 14px;border-radius:14px;background:#eef7f6;border:1px solid #bfe0dc;color:#0b3d3b;font-weight:600}
+.tcn-guest-note{margin:12px 0;padding:12px 14px;border-radius:14px;background:var(--tcn-sea-soft);border:1px solid #b9d3ee;color:var(--tcn-sea-3);font-weight:600}
 
 /* account + inner page headers: warmer */
 .page-visual{background-color:var(--tcn-sea-3)!important}
@@ -119,3 +120,17 @@ header,.site-header{background:rgba(255,250,243,.92)!important;backdrop-filter:s
 @media (prefers-reduced-motion:reduce){.tcn-stamp,.tcn-stamp:nth-child(even){transform:none}}
 body.tc-no-motion .tcn-stamp{transform:none!important}
 body.tc-high-contrast .tcn-stamp{outline:none}
+
+/* ---------- ocean blue (overrides the shared teal rules) ---------- */
+.tc-btn-primary,.btn.green,.btn.ai-color,.btn.secondary{background:var(--tcn-sea)!important;box-shadow:0 6px 16px rgba(11,95,165,.25)!important}
+.tc-btn-primary:hover,.btn.green:hover,.btn.secondary:hover{background:var(--tcn-sea-3)!important}
+*:focus-visible{outline-color:var(--tcn-sea)!important}
+.tc-skip{background:var(--tcn-sea)!important}
+body .a11y-panel .a11y-grid .btn[aria-pressed="true"]{background:var(--tcn-sea)!important;border-color:var(--tcn-sea)!important}
+.tc-legal-toc a{background:var(--tcn-sea-soft)!important;color:var(--tcn-sea)!important}
+.tc-legal h4,.tc-legal a{color:var(--tcn-sea)!important}
+.tc-spin{border-color:#cfe0f3!important;border-top-color:var(--tcn-sea)!important}
+.day-photo.tc-day-art{background:linear-gradient(150deg,var(--tcn-sea-2),var(--tcn-sea-3))!important}
+.tc-day-badge,.tc-stop-time{color:var(--tcn-sea)!important}
+.tc-day-badge{background:var(--tcn-sea-soft)!important}
+.lang-link.active{color:var(--tcn-sea)!important}

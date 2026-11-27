@@ -117,8 +117,8 @@
     // v170 handler sends the guest to #login and stores the return path
   }, true);
   function guestBuildNote() {
-    var b = $('plannerBuild'); if (!b || $('tcnGuestNote')) return;
-    b.insertAdjacentHTML('beforebegin', '<div id="tcnGuestNote" class="tcn-guest-note" hidden>🔒 ' + t('כדי לבנות ולשמור את הטיול נבקש להתחבר במייל (קוד חד־פעמי, לוקח דקה). כל מה שמילאתם נשמר.', 'To build and save the trip we will ask you to sign in by email (one-time code, takes a minute). Everything you filled in is kept.') + '</div>');
+    var step = document.querySelector('.planner-step[data-step="7"]'); if (!step || $('tcnGuestNote')) return;
+    step.insertAdjacentHTML('beforeend', '<div id="tcnGuestNote" class="tcn-guest-note" hidden>🔒 ' + t('כדי לבנות ולשמור את הטיול נבקש להתחבר במייל (קוד חד־פעמי, לוקח דקה). כל מה שמילאתם נשמר.', 'To build and save the trip we will ask you to sign in by email (one-time code, takes a minute). Everything you filled in is kept.') + '</div>');
   }
   function syncGuestNote() { var n = $('tcnGuestNote'); if (n) n.hidden = !!me(); }
   function resumeBuildAfterLogin() {
