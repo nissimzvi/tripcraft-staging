@@ -326,3 +326,11 @@ body.tc-big-cursor,body.tc-big-cursor *{cursor:url("data:image/svg+xml,%3Csvg xm
 .tc-legal a{color:#0d6b63;font-weight:700}
 @media (max-width:640px){.tc-legal article{padding:18px 16px}}
 body.tc-high-contrast *::before,body.tc-high-contrast *::after{background-image:none!important;background-color:transparent!important;box-shadow:none!important}
+
+/* ---------- V177: hotels loading / retry ---------- */
+.tc-hotel-wait{display:flex;align-items:center;gap:14px;padding:18px 20px;border:1.5px dashed #b9d6d1;border-radius:18px;background:linear-gradient(180deg,#f4faf9,#fff)}
+.tc-hotel-wait b{display:block;font-size:1.05rem;color:#0f2a33}
+.tc-hotel-wait p{margin:4px 0 0;color:#4f6370}
+.tc-hotel-failed{border-color:#e7b8b0;background:#fff8f6;justify-content:space-between;flex-wrap:wrap}
+.tc-spin{flex:none;width:28px;height:28px;border-radius:50%;border:3px solid #cfe5e1;border-top-color:#0d6b63;animation:tcSpin .9s linear infinite}
+@keyframes tcSpin{to{transform:rotate(360deg)}}

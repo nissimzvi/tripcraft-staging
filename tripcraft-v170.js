@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=185'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=186'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -861,7 +861,15 @@
   function renderHotels() {
     var d = draft(), res = $('plannerResult'); if (!d || !res) return;
     var groups = hotelsFromAi(d), box = $('tcHotelPicks');
-    if (!groups.length) { if (box) box.remove(); return; }
+    if (!groups.length) {
+      var st = hotelState[d.tripId];
+      if (!st) { if (box) box.remove(); return; }
+      if (!box) { box = document.createElement('section'); box.id = 'tcHotelPicks'; box.className = 'tc-hotels'; var dd = $('plannerDraftDays'); dd ? dd.insertAdjacentElement('beforebegin', box) : res.appendChild(box); }
+      box.innerHTML = st === 'loading'
+        ? '<div class="tc-hotel-wait" role="status"><span class="tc-spin" aria-hidden="true"></span><div><b>🏨 ' + t('מחפשים עבורכם 3 מלונות לכל אזור לינה…', 'Finding 3 hotels for each stay…') + '</b><p>' + t('זה לוקח בערך דקה. אפשר להמשיך לגלול ולעבוד על המסלול – המלונות יופיעו כאן לבד.', 'This takes about a minute. Keep browsing — the hotels will appear here automatically.') + '</p></div></div>'
+        : '<div class="tc-hotel-wait tc-hotel-failed" role="status"><div><b>🏨 ' + t('לא הצלחנו להביא מלונות כרגע', 'We couldn’t load hotels right now') + '</b><p>' + t('אפשר לנסות שוב – זה לא נספר כעריכה.', 'You can try again — it doesn’t count as an edit.') + '</p></div><button type="button" class="tc-btn tc-btn-primary" data-hotels-retry>' + t('נסה שוב', 'Try again') + '</button></div>';
+      return;
+    }
     if (!box) { box = document.createElement('section'); box.id = 'tcHotelPicks'; box.className = 'tc-hotels'; var days = $('plannerDraftDays'); days ? days.insertAdjacentElement('beforebegin', box) : res.appendChild(box); }
     var prof = d.plannerProfile || {}, b = prof.agesBands || {}, adults = (b.adult || 0) + (b.young || 0) || prof.people || 2;
     box.innerHTML = '<div class="tc-sec-head"><h3>🏨 ' + t('3 מלונות מומלצים לכל אזור לינה', '3 recommended hotels per stay') + '</h3><p>' + t('נבחרו לפי סוג הלינה, רמת המחיר והדרישות שסימנתם. המחירים והזמינות מתעדכנים ב-Booking.', 'Picked by your lodging type, price level and must-haves. Live prices on Booking.') + '</p></div>' +
@@ -1163,21 +1171,29 @@
     saveChain = next.catch(function () {});
     return next;
   }
-  var healing = {};
-  function healMissingEnrichment(d) {
-    if (!d || !d.tripId || !d.aiItinerary || healing[d.tripId] || d.enrichedAt) return;
-    var hasHotels = ((d.aiItinerary || {}).hotel_recommendations || []).length > 0;
+  var healing = {}, hotelState = {};
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('[data-hotels-retry]')) return;
+    var d = draft(); if (!d) return; healing[d.tripId] = false; healMissingEnrichment(d, true);
+  });
+  function wantsHotels(d) { var m = ((d && d.plannerProfile) || {}).lodgingMode; return m !== 'skip' && m !== 'existing'; }
+  function healMissingEnrichment(d, force) {
+    if (!d || !d.tripId || !d.aiItinerary || healing[d.tripId] || (d.enrichedAt && !force)) return;
+    var hasHotels = ((d.aiItinerary || {}).hotel_recommendations || []).length > 0 || !wantsHotels(d);
     if (d.verification && hasHotels) return;
     if (!me()) return;
     healing[d.tripId] = true;
     var pr = d.plannerProfile || {};
     var request = { country: pr.country || d.country, region: pr.region || '', destination: pr.destination || pr.country || d.country, start_date: pr.start || (d.days[0] || {}).date, end_date: pr.end || (d.days[d.days.length - 1] || {}).date,
       travelers: pr.people || 2, language: HE ? 'he' : 'en', trip_name: d.name, group: pr.group, transport: pr.transport, interests: pr.interests, must: pr.must, avoid: pr.avoid, notes: pr.free || '' };
-    toast(t('משלימים לטיול מלונות ובדיקה ברקע…', 'Adding hotels and verification in the background…'));
+    if (!hasHotels) { hotelState[d.tripId] = 'loading'; try { renderHotels(); } catch (e) {} }
+    toast(hasHotels ? t('משלימים בדיקת מסלול ברקע…', 'Verifying the itinerary in the background…') : t('משלימים לטיול מלונות ובדיקה ברקע…', 'Adding hotels and verification in the background…'));
     enrichInBackground(d, request, { skipVerify: !!d.verification, skipHotels: hasHotels });
   }
   function enrichInBackground(obj, request, opt) {
     opt = opt || {};
+    if (!wantsHotels(obj)) opt.skipHotels = true;
+    if (!opt.skipHotels) hotelState[obj.tripId] = 'loading';
     var sb = sbc(); if (!sb) return;
     var u = me(), base = { trip_id: obj.tripId, user_id: (u && u.id) || null, trip: request };
     var verify = opt.skipVerify ? Promise.resolve(null) : sb.functions.invoke(fnName(), { body: Object.assign({ action: 'verify_trip', itinerary: obj.aiItinerary }, base) }).then(function (r) { return r && r.data && r.data.ok ? r.data : null; }).catch(function () { return null; });
@@ -1187,6 +1203,8 @@
       if (!res[0] || !res[1]) console.warn('V172 enrichment partial', obj.tripId, !!res[0], !!res[1]);
       if (res[0]) { target.verification = res[0].verification || null; target.aiUsage = Object.assign({}, target.aiUsage, { verify: res[0].usage || null, verifyCostUsd: res[0].cost_usd || 0 }); }
       if (res[1]) { target.aiItinerary = Object.assign({}, target.aiItinerary, { hotel_recommendations: res[1].hotel_recommendations || [] }); }
+      if (!opt.skipHotels) { hotelState[obj.tripId] = (res[1] && (res[1].hotel_recommendations || []).length) ? null : 'failed'; healing[obj.tripId] = false; }
+      try { var cd = draft(); if (cd && cd.tripId === obj.tripId) renderHotels(); } catch (e) {}
       target.buildStatus = 'verified-save';
       if (res[0] || res[1]) target.enrichedAt = new Date().toISOString();
       if (res[0] || res[1]) saveDraftObject(target).then(function () { if (res[1] && (res[1].hotel_recommendations || []).length) toast(t('🏨 המלונות המומלצים נוספו לטיול', '🏨 Recommended hotels were added')); });
@@ -1372,7 +1390,7 @@
   }
   function boot() {
     relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs(); setupA11y();
-    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V176'); });
+    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V177'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });
     try { var cur = plannerStep1Part; showPartSilently(cur); } catch (e) {}
