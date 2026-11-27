@@ -163,3 +163,9 @@ body.tc-high-contrast #mainApp section.panel,body.tc-high-contrast .tc-home-cont
   #mainApp section.panel{border-radius:22px!important;margin:14px 8px 22px!important;padding:12px 10px 18px!important}
   .tc-home-content{border-radius:24px;margin:16px 8px 24px;max-width:none}
 }
+
+/* ---------- V204: build button at the top of the summary step ---------- */
+.tcn-build-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 16px;padding:14px 16px;border-radius:18px;background:linear-gradient(135deg,#fff3ec,#fffaf6);border:1.5px solid #ffc6ad}
+.tcn-build-top span{font-weight:700;color:#5a2a18}
+.tcn-build-top .tcn-btn-coral{border:0;cursor:pointer;font-size:1.05rem}
+@media (max-width:640px){.tcn-build-top .tcn-btn-coral{width:100%}}

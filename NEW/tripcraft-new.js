@@ -196,13 +196,27 @@
   }, true);
   function fixOtpField() { var f = otpField(); if (f && f.getAttribute('maxlength') !== '12') { f.setAttribute('maxlength', '12'); } }
 
+  /* ---------- 9. Build button visible right away on the summary step ---------- */
+  function topBuildButton() {
+    var step = document.querySelector('.planner-step[data-step="7"]'); if (!step || $('tcnBuildTop')) return;
+    var head = step.querySelector('h2, h3') || step.firstElementChild;
+    var wrap = document.createElement('div'); wrap.className = 'tcn-build-top';
+    wrap.innerHTML = '<span>' + t('הכל נראה טוב? אפשר לבנות עכשיו, או לגלול ולבדוק את הפרטים.', 'All good? Build now, or scroll down to review the details.') + '</span><button type="button" id="tcnBuildTop" class="tcn-btn-coral">✨ ' + t('בנה את הטיול', 'Build my trip') + '</button>';
+    if (head && head.parentNode === step) head.insertAdjacentElement('afterend', wrap); else step.insertBefore(wrap, step.firstChild);
+  }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('#tcnBuildTop')) return;
+    e.preventDefault();
+    var b = $('plannerBuild'); if (b) b.click(); // same flow as the bottom button
+  });
+
   /* ---------- boot ---------- */
   function wrapRender() {
     var orig = window.renderPlannerDraft; if (typeof orig !== 'function' || orig.__tcn) return;
     var w = function () { var r = orig.apply(this, arguments); try { renderTripExtras(); } catch (e) { console.warn('TCN extras', e); } return r; };
     w.__tcn = true; window.renderPlannerDraft = w; try { renderPlannerDraft = w; } catch (e) {}
   }
-  function tick() { setupHome(); guestBuildNote(); syncGuestNote(); resumeBuildAfterLogin(); fixOtpField(); }
+  function tick() { setupHome(); guestBuildNote(); topBuildButton(); syncGuestNote(); resumeBuildAfterLogin(); fixOtpField(); }
   function boot() {
     wrapRender(); tick();
     window.addEventListener('hashchange', function () { setTimeout(tick, 120); setTimeout(tick, 900); });
