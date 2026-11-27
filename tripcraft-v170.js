@@ -23,7 +23,7 @@
   }, true);
   // EN toggle on the Hebrew page: load the full English dictionary too
   if (!HE && !window.TC_I18N_EN && ![].some.call(document.scripts, function (x) { return /tripcraft-i18n-en\.js/.test(x.src); })) {
-    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=186'; document.head.appendChild(i18s); } catch (e) {}
+    try { var i18s = document.createElement('script'); i18s.src = 'tripcraft-i18n-en.js?v=187'; document.head.appendChild(i18s); } catch (e) {}
   }
   function t(he, en) { return HE ? he : en; }
   function $(id) { return document.getElementById(id); }
@@ -182,12 +182,14 @@
   function countryIso(name) { var c = COUNTRY_BY_NAME[norm(name)]; return c ? c[0] : ''; }
   function countryLabel(iso) { var c = COUNTRIES.find(function (x) { return x[0] === iso; }); return c ? (HE ? c[1] : c[2]) : iso; }
   window.tcCountryIso = countryIso;
+  function resultVisible() { var r = $('plannerResult'), d = draft(); return !!(r && r.offsetParent !== null && d && d.days && d.days.length); }
   function tripCountryIsos() {
+    // On an open trip use THAT trip's countries; in the new-trip wizard use the wizard's
+    if (resultVisible()) { var fromDraft = draftCountryIsos(); if (fromDraft.length) return fromDraft; }
     var names = [];
     try { var d = typeof plannerData === 'function' ? plannerData() : null; if (d) names = (d.countries && d.countries.length ? d.countries : [d.country]); } catch (e) {}
-    var dr = draft();
-    if (!names.length && dr && dr.plannerProfile) names = dr.plannerProfile.countries || [dr.plannerProfile.country || dr.country];
-    return names.filter(Boolean).map(countryIso).filter(Boolean);
+    var out = names.filter(Boolean).map(countryIso).filter(Boolean);
+    return out.length ? out : draftCountryIsos();
   }
 
   var AIRPORTS = window.TC_AIRPORTS_FULL || [];
@@ -649,16 +651,53 @@
   /* ================================================================
    * 7. Accurate navigation: geocode each stop inside the trip countries
    * ================================================================ */
-  var GEO_KEY = 'tc_geo_v170', geoCache = lsGet(GEO_KEY, {});
+  var GEO_KEY = 'tc_geo_v177', geoCache = lsGet(GEO_KEY, {});
+  try { localStorage.removeItem('tc_geo_v170'); } catch (e) {}
+  // Countries of the trip that is OPEN on the result page (not the new-trip wizard)
+  function resultCountryIsos() { var o = draftCountryIsos(); return o.length ? o : tripCountryIsos(); }
+  function draftCountryIsos() {
+    var dr = draft(), names = [];
+    if (dr) { var pp = dr.plannerProfile || {}; names = [].concat(pp.countries || [], pp.country || [], dr.country || [], (dr.aiItinerary || {}).country || []); }
+    var out = [];
+    names.forEach(function (n) {
+      String(n || '').split(/\s*[,/&·]\s*|\s+and\s+/i).forEach(function (part) {
+        part = part.trim(); if (!part) return;
+        var iso = countryIso(part) || (/^ו/.test(part) ? countryIso(part.slice(1)) : '');
+        if (!iso) part.split(/\s+ו/).forEach(function (q) { var i2 = countryIso(q.trim()); if (i2 && out.indexOf(i2) < 0) out.push(i2); });
+        else if (out.indexOf(iso) < 0) out.push(iso);
+      });
+    });
+    return out;
+  }
+  // Rough bounding box per country, built from its airports (+2° margin)
+  var bboxCache = {};
+  function countryBox(iso) {
+    if (bboxCache[iso] !== undefined) return bboxCache[iso];
+    var b = null;
+    (window.TC_AIRPORTS_FULL || []).forEach(function (a) { if (a[3] !== iso) return; var la = +a[4], lo = +a[5]; if (!b) b = [la, la, lo, lo]; else { b[0] = Math.min(b[0], la); b[1] = Math.max(b[1], la); b[2] = Math.min(b[2], lo); b[3] = Math.max(b[3], lo); } });
+    return (bboxCache[iso] = b ? [b[0] - 2, b[1] + 2, b[2] - 2, b[3] + 2] : null);
+  }
+  function inTripCountries(c, isos) {
+    if (!c || !isos || !isos.length) return true;
+    var known = false;
+    for (var i = 0; i < isos.length; i++) { var b = countryBox(isos[i]); if (!b) continue; known = true; if (c.lat >= b[0] && c.lat <= b[1] && c.lon >= b[2] && c.lon <= b[3]) return true; }
+    return !known;
+  }
   var VAGUE = /^(באירוח|במסעדה|האזור|אזור הלינה|מקום הלינה|הבסיס|בסיס|המלון|לינה|ארוחת|nearby|the area|your hotel|hotel|accommodation)/i;
   function stopQuery(st) { return String(st.place || st.location || st.name || '').replace(/\s*\(([A-Z]{3})\)\s*$/, ' $1').trim(); }
   function geocodeStop(st) {
-    if (st && st.lat && st.lon) return Promise.resolve({ lat: +st.lat, lon: +st.lon, exact: st.geoExact !== false });
+    var isos = resultCountryIsos();
+    if (st && st.lat && st.lon) {
+      var have = { lat: +st.lat, lon: +st.lon, exact: st.geoExact !== false };
+      if (inTripCountries(have, isos)) return Promise.resolve(have);
+      delete st.lat; delete st.lon; delete st.geoExact; // stored point is outside the trip's countries – find it again
+    }
     var q = stopQuery(st || {}); if (!q || VAGUE.test(q)) return Promise.resolve(null);
     var iata = q.match(/\b([A-Z]{3})$/), ap = iata && window.tcAirportByCode(iata[1]);
     if (ap) { st.lat = ap[4]; st.lon = ap[5]; st.geoExact = true; return Promise.resolve({ lat: ap[4], lon: ap[5], exact: true }); }
-    var isos = tripCountryIsos(), key = isos.join(',') + '|' + norm(q);
-    if (geoCache[key] !== undefined) { var c = geoCache[key]; if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; } return Promise.resolve(c); }
+    if (!isos.length) return Promise.resolve(null); // never search the whole world – Waze/Maps get the text instead
+    var key = isos.join(',') + '|' + norm(q);
+    if (geoCache[key] !== undefined && inTripCountries(geoCache[key], isos)) { var c = geoCache[key]; if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; } return Promise.resolve(c); }
     return nominatimSearch(q, isos, 1).then(function (rows) {
       var r = rows && rows[0];
       if (r) return { lat: +(+r.lat).toFixed(6), lon: +(+r.lon).toFixed(6), exact: true };
@@ -668,6 +707,7 @@
         return hit ? { lat: +(+hit.lat).toFixed(6), lon: +(+hit.lon).toFixed(6), exact: true } : null;
       });
     }).then(function (c) {
+      if (c && !inTripCountries(c, isos)) c = null;
       geoCache[key] = c; lsSet(GEO_KEY, geoCache);
       if (c) { st.lat = c.lat; st.lon = c.lon; st.geoExact = true; }
       return c;
@@ -1390,7 +1430,7 @@
   }
   function boot() {
     relabelCountryChips(); observeAccount(); buildNotesCard(); resumeJobs(); setupA11y();
-    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V177'); });
+    document.querySelectorAll('footer *').forEach(function (el) { if (el.childNodes.length === 1 && el.firstChild.nodeType === 3 && /V1\d\d/.test(el.textContent)) el.textContent = el.textContent.replace(/V1\d\d/, 'V178'); });
     enhanceCountrySearch(); enhanceMustField(); fixSubnav(); watchCalendar(); wireSave(); wrapInvoke(); decorateDateDisplays();
     ['plStart', 'plEnd'].forEach(function (id) { var el = $(id); if (el && !el.dataset.v170) { el.dataset.v170 = '1'; el.addEventListener('change', function () { decorateDateDisplays(); renderFlightContext(); }); } });
     try { var cur = plannerStep1Part; showPartSilently(cur); } catch (e) {}
