@@ -169,3 +169,97 @@ body.tc-high-contrast #mainApp section.panel,body.tc-high-contrast .tc-home-cont
 .tcn-build-top span{font-weight:700;color:#5a2a18}
 .tcn-build-top .tcn-btn-coral{border:0;cursor:pointer;font-size:1.05rem}
 @media (max-width:640px){.tcn-build-top .tcn-btn-coral{width:100%}}
+
+/* =====================================================================
+   V205 – one design language: "Passport & Route" (TripCraft only)
+   4 button types · ocean headers · boarding-pass trip cards · flight-path progress
+   ===================================================================== */
+:root{--tcn-btn-h:46px;--tcn-cta:linear-gradient(135deg,#ff7a45,#f04e23);--tcn-cta-shadow:0 10px 24px rgba(240,78,35,.32);--tcn-blue-shadow:0 8px 20px rgba(11,95,165,.26)}
+
+/* -- base shape for every button -- */
+.btn,.tc-btn,.tcn-btn-coral,button.btn{min-height:var(--tcn-btn-h);border-radius:999px!important;font-weight:800!important;letter-spacing:0!important;transition:transform .15s ease,box-shadow .2s ease,background .2s ease!important}
+.btn:not([disabled]):hover,.tc-btn:not([disabled]):hover,.tcn-btn-coral:hover{transform:translateY(-1px)}
+.btn:not([disabled]):active,.tc-btn:not([disabled]):active{transform:translateY(0)}
+
+/* 1) CTA – coral sunset: "build a trip" only */
+.btn.planner-color,a.btn.planner-color,.tcn-btn-coral,#plannerBuild,#tcnBuildTop,.btn.purple-btn,
+#account .btn.planner-color,#account [onclick*="tcStartCleanTrip"],#account .tc-btn-accent{
+  background:var(--tcn-cta)!important;color:#fff!important;border:0!important;box-shadow:var(--tcn-cta-shadow)!important}
+
+/* 2) primary – solid ocean: main actions */
+.btn.green,.btn.secondary,.btn.orange-btn,.btn.cart-add,.btn.import-color,.btn.ai-color,.btn.booking-cta,
+.tc-btn-primary,.tc-btn-booking,.tc-btn-waze,#plannerNext{
+  background:var(--tcn-sea)!important;color:#fff!important;border:0!important;box-shadow:var(--tcn-blue-shadow)!important;background-image:none!important}
+.btn.green:hover,.btn.secondary:hover,.btn.orange-btn:hover,.btn.cart-add:hover,.tc-btn-primary:hover,.tc-btn-booking:hover,.tc-btn-waze:hover,#plannerNext:hover{background:var(--tcn-sea-3)!important}
+.tc-btn-waze::before{content:"🚗 "}
+
+/* 3) secondary – white with an ocean outline */
+.btn.soft,.tc-btn-soft,.tc-btn-ghost:not(.tc-danger-text),#plannerPrev,.tc-btn-gmaps,a.tc-btn[data-tc-nav="gmaps"],[data-tcn-copy]{
+  background:#fff!important;color:var(--tcn-sea)!important;border:1.5px solid #b9d3ee!important;box-shadow:none!important}
+.btn.soft:hover,.tc-btn-soft:hover,.tc-btn-ghost:not(.tc-danger-text):hover,#plannerPrev:hover,a.tc-btn[data-tc-nav="gmaps"]:hover{background:var(--tcn-sea-soft)!important;border-color:var(--tcn-sea)!important}
+/* hero secondary stays glass on the photo */
+#home.tcn-hero .tc-home-account{background:rgba(255,255,255,.14)!important;color:#fff!important;border:1.5px solid rgba(255,255,255,.6)!important}
+
+/* 4) danger – red text only */
+.tc-danger-text,.tc-btn-danger{background:transparent!important;color:#c2362b!important;border:0!important;box-shadow:none!important}
+.tc-danger-text:hover,.tc-btn-danger:hover{background:#fdeceb!important}
+
+/* disabled (trip being built) */
+.btn[disabled],.tc-btn[disabled]{background:#e9eef3!important;color:#97a6b2!important;border-color:#e1e8ee!important;box-shadow:none!important;transform:none!important;cursor:not-allowed}
+
+/* selectable chips in the wizard: same ocean language */
+.choice-grid label:has(input:checked),.chip-grid label:has(input:checked),label:has(> input[type=checkbox]:checked).choice,label:has(> input[type=radio]:checked).choice{border-color:var(--tcn-sea)!important;background:var(--tcn-sea-soft)!important;color:var(--tcn-sea-3)!important}
+
+/* -- page headers: one ocean tone over every header photo -- */
+.page-visual{position:relative;overflow:hidden}
+.page-visual::before{background:linear-gradient(to top,rgba(8,40,74,.86),rgba(8,58,104,.18))!important}
+.page-visual h2{font-family:var(--tcn-display)!important;font-weight:400!important;font-size:clamp(1.7rem,3.4vw,2.4rem)!important}
+
+/* summary hero (step 7) + trip header in ocean */
+[class*="summary-hero"],.tc-sum-hero,.tc-summary-hero,#plannerSummary > div:first-child[style*="gradient"]{background:linear-gradient(135deg,var(--tcn-sea-2),var(--tcn-sea-3))!important}
+
+/* -- wizard progress = dotted flight path with a plane -- */
+.planner-progress{height:16px!important;background:none!important;overflow:visible!important;position:relative;margin:8px 0 18px!important}
+.planner-progress::before{content:"";position:absolute;inset-inline:0;top:7px;border-top:2px dashed #c4d6ea}
+#plannerProgressBar{position:relative;height:4px!important;top:6px;background:linear-gradient(90deg,var(--tcn-sea-2),var(--tcn-sea))!important;border-radius:4px!important;transition:width .45s cubic-bezier(.2,.7,.2,1)!important;overflow:visible!important}
+#plannerProgressBar::after{content:"✈";position:absolute;top:50%;inset-inline-end:-16px;width:30px;height:30px;display:grid;place-items:center;border-radius:50%;background:#fff;border:2px solid var(--tcn-coral);box-shadow:0 4px 12px rgba(240,78,35,.3);transform:translateY(-50%) scaleX(-1);font-size:16px;line-height:1;color:var(--tcn-coral-2)}
+html[dir="ltr"] #plannerProgressBar::after{transform:translateY(-50%)}
+.planner-progress{margin:16px 6px 24px!important}
+
+/* -- My account: trip cards as boarding passes -- */
+#account .tc-trip-card{position:relative;overflow:visible;border-radius:20px!important;background:#fffdf9!important;border:1px solid #e7dcc9!important;
+  grid-template-columns:76px 1fr auto!important;padding:18px 18px 16px!important}
+#account .tc-trip-card::before{content:"";position:absolute;top:12px;bottom:12px;inset-inline-start:92px;border-inline-start:2px dashed #d9ccb6}
+#account .tc-trip-card .tc-trip-art{width:60px!important;height:60px!important;border-radius:14px!important;background:var(--tcn-sea-soft)!important;font-size:30px!important;color:var(--tcn-sea-3)}
+#account .tc-trip-card h3{font-family:var(--tcn-display);font-weight:400;font-size:1.35rem;margin:0 0 2px}
+#account .tc-trip-card .tc-trip-info::before{content:"BOARDING PASS · TRIPCRAFT ✈";display:block;font:800 .62rem/1 "Rubik",sans-serif;letter-spacing:.18em;color:var(--tcn-coral-2);margin-bottom:6px}
+#account .tc-trip-card .tc-trip-dates{display:inline-block;margin-top:6px;padding:3px 10px;border-radius:8px;background:var(--tcn-sea-soft);color:var(--tcn-sea-3);font-weight:800}
+/* the two notches of the tear line (cut into the top and bottom edge) */
+#account .tc-trip-card{--notch:#efe8dc;background:radial-gradient(circle at calc(100% - 93px) 0,var(--notch) 10px,transparent 10.5px),radial-gradient(circle at calc(100% - 93px) 100%,var(--notch) 10px,transparent 10.5px),#fffdf9!important}
+html[dir="ltr"] #account .tc-trip-card{background:radial-gradient(circle at 93px 0,var(--notch) 10px,transparent 10.5px),radial-gradient(circle at 93px 100%,var(--notch) 10px,transparent 10.5px),#fffdf9!important}
+#account .tc-trip-pending{background:radial-gradient(circle at calc(100% - 93px) 0,var(--notch) 10px,transparent 10.5px),radial-gradient(circle at calc(100% - 93px) 100%,var(--notch) 10px,transparent 10.5px),#fff7f8!important}
+html[dir="ltr"] #account .tc-trip-pending{background:radial-gradient(circle at 93px 0,var(--notch) 10px,transparent 10.5px),radial-gradient(circle at 93px 100%,var(--notch) 10px,transparent 10.5px),#fff7f8!important}
+#account .tc-trip-pending{border-color:#e7b9c3!important}
+@media (max-width:640px){
+  #account .tc-trip-card{grid-template-columns:56px 1fr!important}
+  #account .tc-trip-card::before{inset-inline-start:72px;bottom:auto;height:70px}
+  #account .tc-trip-card .tc-trip-art{width:46px!important;height:46px!important;font-size:24px!important}
+  #account .tc-trip-card,#account .tc-trip-pending,html[dir="ltr"] #account .tc-trip-card{background-image:none!important}
+}
+
+/* -- trip page + day view in the same language -- */
+.tc-timeline::before,.tc-timeline > li.tc-stop::before{background:var(--tcn-sea)!important;border-color:var(--tcn-sea)!important}
+.tc-stop{border-radius:18px!important}
+.tc-stop-time{color:var(--tcn-sea)!important;font-weight:800}
+.tc-hotel-card{border-radius:18px!important}
+.tc-hotel-rank{background:var(--tcn-sea)!important;color:#fff!important}
+#plannerDraftDays .day-row{border-radius:22px!important}
+.day-photo.tc-day-art b{font-family:var(--tcn-display);font-weight:400}
+
+/* pricing: featured plan gets the coral CTA + ribbon */
+.btn.purple-btn{position:relative}
+/* contrast fixes (WCAG AA) */
+.brand small,header small,.tc-brand small,[data-he="מתכננים טיול בדרך שלכם"]{color:#3f4f5b!important}
+.tc-home-section-head span{color:#a8320e!important;background:#ffe9e0!important}
+.tc-home-section-head p{color:#3f4f5b!important}
+.tc-home-content,#mainApp section.panel{background:rgba(255,250,243,.94)!important}
