@@ -52,7 +52,13 @@
     location.hash = '#planner';
     setTimeout(function () {
       var val = countryValue(iso) || d.he;
-      var box = $('countryChoices'), inp = box && [].find.call(box.querySelectorAll('input'), function (x) { return x.value === val; });
+      var box = $('countryChoices');
+      // a destination card starts a fresh trip: drop countries, region, must-sees and airports left from a previous trip
+      if (box) [].forEach.call(box.querySelectorAll('input:checked'), function (x) { if (x.value !== val) { x.checked = false; x.dispatchEvent(new Event('change', { bubbles: true })); } });
+      ['plDestination', 'plMust', 'plArrivalAirport', 'plDepartureAirport', 'plArrivalTime', 'plDepartureTime'].forEach(function (id) { var f = $(id); if (f && f.value) { f.value = ''; f.dispatchEvent(new Event('input', { bubbles: true })); f.dispatchEvent(new Event('change', { bubbles: true })); } });
+      [].forEach.call(document.querySelectorAll('#plMustChips .tc-chip, .tc-must-chips .tc-chip'), function (c) { c.remove(); });
+      var name0 = $('plTripName'); if (name0) name0.value = '';
+      var inp = box && [].find.call(box.querySelectorAll('input'), function (x) { return x.value === val; });
       if (inp) { if (!inp.checked) { inp.checked = true; inp.dispatchEvent(new Event('change', { bubbles: true })); } }
       else if (window.tcAddCountry) window.tcAddCountry(val);
       var name = $('plTripName'); if (name && !name.value) { name.value = t('טיול ל' + d.he, 'Trip to ' + d.en); name.dispatchEvent(new Event('input', { bubbles: true })); }
